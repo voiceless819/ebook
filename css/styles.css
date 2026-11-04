@@ -242,6 +242,14 @@ html, body {
   color: #e5e7eb;
 }
 
+.spread-toggle-group {
+  display: flex;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* Header Actions Right */
 .header-actions {
   display: flex;
@@ -293,6 +301,43 @@ html, body {
   width: 100%;
   height: calc(100vh - 52px - 58px);
   overflow: hidden;
+  transition: height 0.25s ease;
+}
+
+.reader-workspace.fullscreen-immersive {
+  height: 100vh;
+}
+
+.floating-show-ui-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(20, 22, 26, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e5e7eb;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  z-index: 160;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  opacity: 0.85;
+  transition: all 0.2s ease;
+}
+
+.floating-show-ui-btn:hover {
+  opacity: 1;
+  background: #2563eb;
+  border-color: #3b82f6;
+}
+
+.floating-show-ui-btn.visible {
+  display: inline-flex;
 }
 
 .reading-view-panel {
@@ -337,23 +382,22 @@ html, body {
 }
 
 .book-3d-wrapper.single-mode {
-  width: min(94vw, 560px);
+  width: min(92vw, 680px);
+  margin: 0 auto;
 }
 
-.book-spine-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  width: 2px;
-  margin-left: -1px;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 30;
-  pointer-events: none;
+.single-mode .book-page-slot.left-slot {
+  display: none !important;
+}
+
+.single-mode .book-page-slot.right-slot {
+  width: 100% !important;
+  border-radius: 6px;
+  box-shadow: 0 15px 45px var(--paper-shadow);
 }
 
 .single-mode .book-spine-line {
-  display: none;
+  display: none !important;
 }
 
 .book-page-slot {
@@ -469,12 +513,6 @@ html, body {
   width: 100%;
   right: 0;
   transform-origin: left center;
-}
-
-.flipping-sheet.turning-backward {
-  left: 0;
-  right: auto;
-  transform-origin: right center;
 }
 
 .flip-face {

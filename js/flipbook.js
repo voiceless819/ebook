@@ -1,21 +1,21 @@
 /**
  * LuminaBook - 3D Realistic Flipbook Core Engine
- * Dual-page spread, dynamic 3D page curl/turning animation, realistic paper shadows & spine depth.
+ * Dual-page spread, single-page mode, bug-free bi-directional 3D page flip animation.
  */
 
 class FlipbookCore {
   constructor(containerEl, options = {}) {
     this.container = containerEl;
     this.options = Object.assign({
-      spread: 'auto', // 'auto', 'double', 'single'
+      spread: 'double', // 'double' | 'single' | 'auto'
       soundEnabled: true,
       onPageChange: null,
       onFlipStart: null,
       onFlipEnd: null
     }, options);
 
-    this.pages = []; // Array of page objects or renders
-    this.currentPage = 1; // 1-based page number
+    this.pages = [];
+    this.currentPage = 1;
     this.isFlipping = false;
     this.zoomLevel = 1.0;
 
@@ -26,7 +26,6 @@ class FlipbookCore {
   initDOM() {
     this.container.innerHTML = `
       <div class="flipbook-stage" id="flipbookStage">
-        <div class="book-spine-shadow"></div>
         <div class="book-3d-wrapper" id="bookWrapper">
           <!-- Left Wing / Page -->
           <div class="book-page-slot left-slot" id="leftSlot">
@@ -36,7 +35,7 @@ class FlipbookCore {
           </div>
 
           <!-- Central Book Spine Axis -->
-          <div class="book-spine-line"></div>
+          <div class="book-spine-line" id="bookSpineLine"></div>
 
           <!-- Right Wing / Page -->
           <div class="book-page-slot right-slot" id="rightSlot">
@@ -69,16 +68,15 @@ class FlipbookCore {
     this.cornerCurlHint = this.container.querySelector('#cornerCurlHint');
 
     // Click on page wings to turn
-    this.rightSlot.addEventListener('click', (e) => {
+    this.rightSlot.addEventListener('click', () => {
       if (this.isFlipping) return;
-      // Do not trigger page turn if selecting text or clicking interactive elements
-      if (window.getSelection().toString().length > 0) return;
+      if (window.getSelection && window.getSelection().toString().length > 0) return;
       this.next();
     });
 
-    this.leftSlot.addEventListener('click', (e) => {
+    this.leftSlot.addEventListener('click', () => {
       if (this.isFlipping) return;
-      if (window.getSelection().toString().length > 0) return;
+      if (window.getSelection && window.getSelection().toString().length > 0) return;
       this.prev();
     });
   }
@@ -86,8 +84,13 @@ class FlipbookCore {
   isSinglePage() {
     if (this.options.spread === 'single') return true;
     if (this.options.spread === 'double') return false;
-    // Auto: Single page for mobile/vertical screens or narrow viewport
-    return window.innerWidth < 880 || (window.innerHeight > window.innerWidth);
+    return window.innerWidth < 880;
+  }
+
+  setSpread(mode) {
+    this.options.spread = mode; // 'single' or 'double'
+    this.updateLayout();
+    this.renderCurrentView();
   }
 
   setPages(pages) {
@@ -116,20 +119,16 @@ class FlipbookCore {
     }
   }
 
-  /**
-   * Get the visible page numbers for the current view
-   */
-  getVisiblePages() {
+  getVisiblePages(targetPage = null) {
+    const page = targetPage !== null ? targetPage : this.currentPage;
     const single = this.isSinglePage();
     if (single) {
-      return [this.currentPage];
+      return [page, page];
     } else {
-      if (this.currentPage === 1) {
-        // Page 1 is Cover (alone on right or center)
+      if (page <= 1) {
         return [null, 1];
       }
-      // Facing pages: even on left, odd on right
-      const leftPage = (this.currentPage % 2 === 0) ? this.currentPage : this.currentPage - 1;
+      const leftPage = (page % 2 === 0) ? page : page - 1;
       const rightPage = leftPage + 1 <= this.pages.length ? leftPage + 1 : null;
       return [leftPage, rightPage];
     }
@@ -165,7 +164,6 @@ class FlipbookCore {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'page-content-wrapper';
 
-    // If canvas is already rendered
     if (pageData.canvas) {
       const clonedCanvas = document.createElement('canvas');
       clonedCanvas.width = pageData.canvas.width;
@@ -181,7 +179,7 @@ class FlipbookCore {
       img.alt = `Página ${pageNum}`;
       contentDiv.appendChild(img);
     } else if (window.pdfEngine && window.pdfEngine.isLoaded && pageNum <= window.pdfEngine.numPages) {
-      // On-demand lazy PDF rendering (prevents memory crashes on large books)
+      // On-demand lazy PDF rendering
       const canvasContainer = document.createElement('div');
       canvasContainer.className = 'rendered-page-container';
       canvasContainer.style.width = '100%';
@@ -206,12 +204,11 @@ class FlipbookCore {
         console.warn(`Error al renderizar página ${pageNum}:`, err);
       });
 
-      // Preload next page in background for seamless flip
+      // Preload adjacent page in background
       if (pageNum < window.pdfEngine.numPages) {
         setTimeout(() => window.pdfEngine.renderPage(pageNum + 1).catch(() => {}), 150);
       }
     } else {
-      // Dynamic HTML / Text view
       const textArticle = document.createElement('article');
       textArticle.className = 'dynamic-page-text';
       if (pageData.title) {
@@ -235,7 +232,6 @@ class FlipbookCore {
       contentDiv.appendChild(textArticle);
     }
 
-    // Page Number Stamp
     const footerStamp = document.createElement('div');
     footerStamp.className = 'page-footer-stamp';
     footerStamp.innerHTML = `<span>— ${pageNum} —</span>`;
@@ -245,16 +241,17 @@ class FlipbookCore {
   }
 
   /**
-   * Turn Forward (Next Page) with 3D Flip Animation
+   * Turn Forward (Next Page)
    */
   next() {
     if (this.isFlipping) return;
     const single = this.isSinglePage();
     const maxPage = this.pages.length;
 
+    if (this.currentPage >= maxPage) return;
+
     let targetPage;
     if (single) {
-      if (this.currentPage >= maxPage) return;
       targetPage = this.currentPage + 1;
     } else {
       if (this.currentPage === 1) {
@@ -270,18 +267,18 @@ class FlipbookCore {
   }
 
   /**
-   * Turn Backward (Previous Page) with 3D Flip Animation
+   * Turn Backward (Previous Page in Reverse)
    */
   prev() {
     if (this.isFlipping) return;
     const single = this.isSinglePage();
 
+    if (this.currentPage <= 1) return;
+
     let targetPage;
     if (single) {
-      if (this.currentPage <= 1) return;
       targetPage = this.currentPage - 1;
     } else {
-      if (this.currentPage <= 1) return;
       if (this.currentPage === 2 || this.currentPage === 3) {
         targetPage = 1;
       } else {
@@ -301,49 +298,83 @@ class FlipbookCore {
   }
 
   /**
-   * 3D Page Flip Animation Orchestrator
+   * 3D Page Flip Animation (Glitch-free, Bi-directional)
    */
   _animateFlip(fromPage, toPage, isReverse) {
     this.isFlipping = true;
     if (this.options.onFlipStart) this.options.onFlipStart(toPage);
 
-    // Play synthesized page turn sound
     if (window.bookAudio && this.options.soundEnabled) {
       window.bookAudio.playPageTurn(isReverse);
     }
 
     const single = this.isSinglePage();
 
-    // Setup the 3D flipping sheet faces
     if (!isReverse) {
-      // Forward Turn: Right to Left
-      this._renderPageContent(this.flipFront, single ? fromPage : fromPage);
-      this._renderPageContent(this.flipBack, toPage);
+      // --- FORWARD FLIP (Right to Left) ---
+      if (single) {
+        // Underlying slot immediately displays destination page (eliminates old-page flash)
+        this._renderPageContent(this.rightPaper, toPage);
 
+        // Flipper sheet has old page on front, new page on back
+        this._renderPageContent(this.flipFront, fromPage);
+        this._renderPageContent(this.flipBack, toPage);
+      } else {
+        const [oldL, oldR] = this.getVisiblePages(fromPage);
+        const [newL, newR] = this.getVisiblePages(toPage);
+
+        // The right slot immediately displays newR underneath
+        this._renderPageContent(this.rightPaper, newR);
+
+        // Flipper sheet lifts oldR on front, lands newL on back
+        this._renderPageContent(this.flipFront, oldR);
+        this._renderPageContent(this.flipBack, newL);
+      }
+
+      this.flippingSheet.style.transition = 'none';
+      this.flippingSheet.style.transform = 'rotateY(0deg)';
       this.flippingSheet.style.display = 'block';
-      this.flippingSheet.className = 'flipping-sheet turning-forward';
+      void this.flippingSheet.offsetWidth; // Force synchronous layout reflow
 
-      // Animate rotation from 0 to -180deg
+      this.flippingSheet.style.transition = 'transform 0.44s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       requestAnimationFrame(() => {
         this.flippingSheet.style.transform = 'rotateY(-180deg)';
-        this.flipShadow.style.opacity = '0.5';
+        this.flipShadow.style.opacity = '0.45';
       });
     } else {
-      // Backward Turn: Left to Right
-      this._renderPageContent(this.flipFront, toPage);
-      this._renderPageContent(this.flipBack, single ? fromPage : fromPage);
+      // --- BACKWARD FLIP (Left to Right in Reverse) ---
+      if (single) {
+        // Underlying slot keeps current page while previous page swings over from left
+        this._renderPageContent(this.rightPaper, fromPage);
 
-      this.flippingSheet.style.display = 'block';
-      this.flippingSheet.className = 'flipping-sheet turning-backward';
+        this._renderPageContent(this.flipFront, toPage);
+        this._renderPageContent(this.flipBack, fromPage);
+      } else {
+        const [oldL, oldR] = this.getVisiblePages(fromPage);
+        const [newL, newR] = this.getVisiblePages(toPage);
+
+        // The left slot immediately displays newL underneath as oldL lifts
+        this._renderPageContent(this.leftPaper, newL);
+
+        // Flipper sheet starts on the left (-180deg). Its back face is facing reader with oldL.
+        // When it rotates to 0deg on the right, its front face faces reader with newR!
+        this._renderPageContent(this.flipFront, newR);
+        this._renderPageContent(this.flipBack, oldL);
+      }
+
+      this.flippingSheet.style.transition = 'none';
       this.flippingSheet.style.transform = 'rotateY(-180deg)';
+      this.flippingSheet.style.display = 'block';
+      void this.flippingSheet.offsetWidth; // Force synchronous layout reflow
 
+      this.flippingSheet.style.transition = 'transform 0.44s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       requestAnimationFrame(() => {
         this.flippingSheet.style.transform = 'rotateY(0deg)';
-        this.flipShadow.style.opacity = '0.5';
+        this.flipShadow.style.opacity = '0.45';
       });
     }
 
-    const duration = 480; // ms matching CSS transition
+    const duration = 440; // ms matching CSS transition
 
     setTimeout(() => {
       this.currentPage = toPage;
@@ -351,7 +382,6 @@ class FlipbookCore {
 
       this.flippingSheet.style.display = 'none';
       this.flippingSheet.style.transform = '';
-      this.flippingSheet.className = 'flipping-sheet';
       this.flipShadow.style.opacity = '0';
       this.isFlipping = false;
 

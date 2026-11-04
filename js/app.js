@@ -45,6 +45,14 @@ class LuminaApp {
       await this.loadBook(window.DEMO_BOOK);
     }
 
+    // Restore spread mode preference
+    try {
+      const savedSpread = localStorage.getItem('luminabook_spread_mode');
+      if (savedSpread) {
+        this.setSpreadMode(savedSpread);
+      }
+    } catch (e) {}
+
     // Register PWA Service Worker if served via HTTP/HTTPS
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
       navigator.serviceWorker.register('./sw.js').catch(() => {});
@@ -68,6 +76,10 @@ class LuminaApp {
       // Controls
       btnMode3D: document.getElementById('btnMode3D'),
       btnModeReflow: document.getElementById('btnModeReflow'),
+      btnSpreadSingle: document.getElementById('btnSpreadSingle'),
+      btnSpreadDouble: document.getElementById('btnSpreadDouble'),
+      btnHideUI: document.getElementById('btnHideUI'),
+      floatingShowUIBtn: document.getElementById('floatingShowUIBtn'),
       btnOpenFile: document.getElementById('btnOpenFile'),
       filePicker: document.getElementById('filePicker'),
       btnFullscreen: document.getElementById('btnFullscreen'),
@@ -157,6 +169,22 @@ class LuminaApp {
     // Mode Switching
     this.dom.btnMode3D.addEventListener('click', () => this.setReadingMode('3d'));
     this.dom.btnModeReflow.addEventListener('click', () => this.setReadingMode('reflow'));
+
+    // Spread Switching (1 Página vs 2 Páginas)
+    if (this.dom.btnSpreadSingle) {
+      this.dom.btnSpreadSingle.addEventListener('click', () => this.setSpreadMode('single'));
+    }
+    if (this.dom.btnSpreadDouble) {
+      this.dom.btnSpreadDouble.addEventListener('click', () => this.setSpreadMode('double'));
+    }
+
+    // Hide UI
+    if (this.dom.btnHideUI) {
+      this.dom.btnHideUI.addEventListener('click', () => this.toggleHUD(false));
+    }
+    if (this.dom.floatingShowUIBtn) {
+      this.dom.floatingShowUIBtn.addEventListener('click', () => this.toggleHUD(true));
+    }
 
     // File Pickers
     this.dom.btnOpenFile.addEventListener('click', () => this.dom.filePicker.click());
@@ -576,6 +604,25 @@ class LuminaApp {
     this.showToast('Documento eliminado del catálogo');
   }
 
+  // --- Spread Mode (1 Página vs 2 Páginas) ---
+  setSpreadMode(mode) {
+    this.spreadMode = mode;
+    if (this.dom.btnSpreadSingle && this.dom.btnSpreadDouble) {
+      if (mode === 'single') {
+        this.dom.btnSpreadSingle.classList.add('active');
+        this.dom.btnSpreadDouble.classList.remove('active');
+      } else {
+        this.dom.btnSpreadDouble.classList.add('active');
+        this.dom.btnSpreadSingle.classList.remove('active');
+      }
+    }
+    this.flipbook.setSpread(mode);
+    try {
+      localStorage.setItem('luminabook_spread_mode', mode);
+    } catch (e) {}
+    this.showToast(mode === 'single' ? 'Vista: 1 página' : 'Vista: 2 páginas');
+  }
+
   // --- Reading Modes ---
   setReadingMode(mode) {
     this.readingMode = mode;
@@ -655,14 +702,18 @@ class LuminaApp {
   }
 
   // --- HUD Visibility & Fullscreen ---
-  toggleHUD() {
-    this.hudVisible = !this.hudVisible;
+  toggleHUD(forceState = null) {
+    this.hudVisible = forceState !== null ? forceState : !this.hudVisible;
     if (this.hudVisible) {
       this.dom.appHeader.classList.remove('hud-hidden');
       this.dom.appBottomHud.classList.remove('hud-hidden');
+      this.dom.readerWorkspace.classList.remove('fullscreen-immersive');
+      if (this.dom.floatingShowUIBtn) this.dom.floatingShowUIBtn.classList.remove('visible');
     } else {
       this.dom.appHeader.classList.add('hud-hidden');
       this.dom.appBottomHud.classList.add('hud-hidden');
+      this.dom.readerWorkspace.classList.add('fullscreen-immersive');
+      if (this.dom.floatingShowUIBtn) this.dom.floatingShowUIBtn.classList.add('visible');
     }
   }
 
