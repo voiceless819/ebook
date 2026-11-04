@@ -171,7 +171,7 @@ class FlipbookCore {
       clonedCanvas.width = pageData.canvas.width;
       clonedCanvas.height = pageData.canvas.height;
       const ctx = clonedCanvas.getContext('2d');
-      ctx.drawImage(pageData.canvas, 0, 0);
+      if (ctx) ctx.drawImage(pageData.canvas, 0, 0);
       clonedCanvas.className = 'rendered-page-canvas';
       contentDiv.appendChild(clonedCanvas);
     } else if (pageData.imageData) {
@@ -180,6 +180,36 @@ class FlipbookCore {
       img.className = 'rendered-page-image';
       img.alt = `Página ${pageNum}`;
       contentDiv.appendChild(img);
+    } else if (window.pdfEngine && window.pdfEngine.isLoaded && pageNum <= window.pdfEngine.numPages) {
+      // On-demand lazy PDF rendering (prevents memory crashes on large books)
+      const canvasContainer = document.createElement('div');
+      canvasContainer.className = 'rendered-page-container';
+      canvasContainer.style.width = '100%';
+      canvasContainer.style.height = '100%';
+      canvasContainer.style.display = 'flex';
+      canvasContainer.style.alignItems = 'center';
+      canvasContainer.style.justifyContent = 'center';
+      contentDiv.appendChild(canvasContainer);
+
+      window.pdfEngine.renderPage(pageNum).then(rendered => {
+        if (rendered && rendered.canvas && targetEl.contains(canvasContainer)) {
+          canvasContainer.innerHTML = '';
+          const clonedCanvas = document.createElement('canvas');
+          clonedCanvas.width = rendered.canvas.width;
+          clonedCanvas.height = rendered.canvas.height;
+          const ctx = clonedCanvas.getContext('2d');
+          if (ctx) ctx.drawImage(rendered.canvas, 0, 0);
+          clonedCanvas.className = 'rendered-page-canvas';
+          canvasContainer.appendChild(clonedCanvas);
+        }
+      }).catch(err => {
+        console.warn(`Error al renderizar página ${pageNum}:`, err);
+      });
+
+      // Preload next page in background for seamless flip
+      if (pageNum < window.pdfEngine.numPages) {
+        setTimeout(() => window.pdfEngine.renderPage(pageNum + 1).catch(() => {}), 150);
+      }
     } else {
       // Dynamic HTML / Text view
       const textArticle = document.createElement('article');

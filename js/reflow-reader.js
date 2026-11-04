@@ -146,6 +146,10 @@ class ReflowReader {
         html += `<div class="reflow-chapter-body visual-only">
           <img src="${imgSrc}" class="reflow-embedded-img" alt="Página ${pageNum}"/>
         </div>`;
+      } else {
+        html += `<div class="reflow-chapter-body lazy-text-body" data-page="${pageNum}">
+          <p class="reflow-p" style="color:var(--paper-subtext); font-style:italic;">Extrayendo texto de la página ${pageNum}...</p>
+        </div>`;
       }
 
       html += `<footer class="reflow-chapter-footer"><span>— ${pageNum} —</span></footer>`;
@@ -158,6 +162,33 @@ class ReflowReader {
     this.setFontFamily(this.fontFamily);
     this.setMarginWidth(this.marginWidth);
     this.setTextAlign(this.textAlign);
+
+    // Asynchronously resolve text for PDF chapters
+    const lazyBodies = this.documentEl.querySelectorAll('.lazy-text-body');
+    lazyBodies.forEach(el => {
+      const pageNum = parseInt(el.getAttribute('data-page'));
+      if (window.pdfEngine && window.pdfEngine.isLoaded && pageNum) {
+        window.pdfEngine.extractPageText(pageNum).then(txt => {
+          if (txt && txt.trim()) {
+            const paragraphs = txt.split('\n\n');
+            let bodyHtml = '';
+            paragraphs.forEach(p => {
+              const trimmed = p.trim();
+              if (!trimmed) return;
+              const content = this.bionicMode ? this._applyBionicReading(trimmed) : this._escapeHtml(trimmed);
+              bodyHtml += `<p class="reflow-p">${content}</p>`;
+            });
+            el.innerHTML = bodyHtml;
+          } else {
+            window.pdfEngine.renderPage(pageNum).then(rendered => {
+              if (rendered && rendered.canvas) {
+                el.innerHTML = `<img src="${rendered.canvas.toDataURL('image/jpeg', 0.8)}" class="reflow-embedded-img" alt="Página ${pageNum}"/>`;
+              }
+            });
+          }
+        }).catch(() => {});
+      }
+    });
   }
 
   _escapeHtml(text) {

@@ -1,6 +1,6 @@
 /**
  * LuminaBook - PDF Processing Engine
- * High-definition rasterization, structured text extraction, TOC outline & metadata parsing.
+ * Robust lazy rasterization, structured text extraction, TOC outline & metadata parsing.
  */
 
 class PDFEngine {
@@ -15,13 +15,13 @@ class PDFEngine {
       keywords: ''
     };
     this.outline = [];
-    this.pageCache = new Map(); // pageNum -> { canvas, text, width, height }
+    this.pageCache = new Map(); // pageNum -> { canvas, width, height, aspectRatio }
     this.pageTexts = new Map(); // pageNum -> extracted text string
-    this.structuredPages = []; // array of { pageNum, title, paragraphs: [] }
-    this.renderScale = Math.min(2.0, window.devicePixelRatio || 1.5); // High DPI crisp rendering
+    this.structuredPages = [];
+    this.renderScale = Math.min(1.8, window.devicePixelRatio || 1.5);
     this.isLoaded = false;
 
-    // Configure PDF.js worker (supports root and GitHub Pages subdirectory URLs)
+    // Configure PDF.js worker
     if (window.pdfjsLib) {
       try {
         window.pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdf.worker.min.js', window.location.href).href;
@@ -36,23 +36,28 @@ class PDFEngine {
    */
   async loadDocument(dataOrFile, onProgress) {
     if (!window.pdfjsLib) {
-      throw new Error('PDF.js library is not available');
+      throw new Error('PDF.js no está disponible en la página');
     }
 
     this.reset();
-    let arrayBuffer;
+    let rawBuffer;
 
     if (dataOrFile instanceof File || dataOrFile instanceof Blob) {
       this.metadata.title = dataOrFile.name.replace(/\.[^/.]+$/, "");
-      arrayBuffer = await dataOrFile.arrayBuffer();
+      rawBuffer = await dataOrFile.arrayBuffer();
     } else if (dataOrFile instanceof ArrayBuffer) {
-      arrayBuffer = dataOrFile;
+      rawBuffer = dataOrFile;
+    } else if (dataOrFile && dataOrFile.buffer instanceof ArrayBuffer) {
+      rawBuffer = dataOrFile.buffer;
     } else {
       throw new Error('Formato de datos no soportado');
     }
 
+    // Always create an isolated copy for PDF.js so original rawBuffer is NEVER detached
+    const pdfDataCopy = new Uint8Array(rawBuffer.slice(0));
+
     const loadingTask = window.pdfjsLib.getDocument({
-      data: arrayBuffer,
+      data: pdfDataCopy,
       cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
       cMapPacked: true,
     });
@@ -68,7 +73,7 @@ class PDFEngine {
     this.pdfDoc = await loadingTask.promise;
     this.numPages = this.pdfDoc.numPages;
 
-    // Extract metadata & outline
+    // Extract metadata & outline safely
     await this._extractMetadata();
     await this._extractOutline();
 
@@ -104,7 +109,7 @@ class PDFEngine {
         if (data.info.Creator) this.metadata.creator = data.info.Creator;
       }
     } catch (e) {
-      console.warn('Metadata extraction skipped:', e);
+      console.warn('Extracción de metadatos omitida:', e);
     }
   }
 
@@ -114,7 +119,6 @@ class PDFEngine {
       if (outline && outline.length > 0) {
         this.outline = await this._processOutlineItems(outline);
       } else {
-        // Fallback: create basic chapter outline from page intervals
         this.outline = this._generateDefaultOutline();
       }
     } catch (e) {
@@ -127,17 +131,19 @@ class PDFEngine {
     for (const item of items) {
       let pageNum = 1;
       if (item.dest) {
-        let dest = item.dest;
-        if (typeof dest === 'string') {
-          dest = await this.pdfDoc.getDestination(dest);
-        }
-        if (Array.isArray(dest)) {
-          const pageRef = dest[0];
-          pageNum = (await this.pdfDoc.getPageIndex(pageRef)) + 1;
-        }
+        try {
+          let dest = item.dest;
+          if (typeof dest === 'string') {
+            dest = await this.pdfDoc.getDestination(dest);
+          }
+          if (Array.isArray(dest)) {
+            const pageRef = dest[0];
+            pageNum = (await this.pdfDoc.getPageIndex(pageRef)) + 1;
+          }
+        } catch (e) {}
       }
       const entry = {
-        title: item.title,
+        title: item.title || `Sección ${pageNum}`,
         page: pageNum,
         items: item.items && item.items.length > 0 ? await this._processOutlineItems(item.items) : []
       };
@@ -151,7 +157,7 @@ class PDFEngine {
     const step = Math.max(1, Math.floor(this.numPages / 10));
     for (let p = 1; p <= this.numPages; p += step) {
       list.push({
-        title: p === 1 ? 'Portada / Inicio' : `Página ${p}`,
+        title: p === 1 ? 'Inicio / Portada' : `Página ${p}`,
         page: p,
         items: []
       });
@@ -160,58 +166,90 @@ class PDFEngine {
   }
 
   /**
-   * Render a specific page to an HTML Canvas
+   * Render a specific page to an HTML Canvas with safe error boundaries
    */
   async renderPage(pageNum, customScale = null) {
-    if (!this.pdfDoc || pageNum < 1 || pageNum > this.numPages) return null;
+    if (!this.pdfDoc || pageNum < 1 || pageNum > this.numPages) {
+      return this._createFallbackCanvas(pageNum, 'Página fuera de rango');
+    }
 
     const cacheKey = `${pageNum}_${customScale || this.renderScale}`;
     if (this.pageCache.has(cacheKey)) {
       return this.pageCache.get(cacheKey);
     }
 
-    const page = await this.pdfDoc.getPage(pageNum);
-    const scale = customScale || this.renderScale;
-    const viewport = page.getViewport({ scale });
+    try {
+      const page = await this.pdfDoc.getPage(pageNum);
+      const scale = customScale || Math.min(1.8, this.renderScale);
+      const viewport = page.getViewport({ scale });
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { alpha: false });
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.floor(viewport.width));
+      canvas.height = Math.max(1, Math.floor(viewport.height));
 
-    // Fill white background before rendering
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) {
+        throw new Error('No se pudo inicializar el contexto 2D del canvas');
+      }
 
-    const renderContext = {
-      canvasContext: ctx,
-      viewport: viewport,
-      intent: 'display'
-    };
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    await page.render(renderContext).promise;
+      const renderContext = {
+        canvasContext: ctx,
+        viewport: viewport,
+        intent: 'display'
+      };
 
-    // Also extract text asynchronously if not yet cached
-    if (!this.pageTexts.has(pageNum)) {
-      this.extractPageText(pageNum).catch(console.warn);
+      await page.render(renderContext).promise;
+
+      const result = {
+        pageNum,
+        canvas,
+        width: viewport.width,
+        height: viewport.height,
+        aspectRatio: viewport.width / viewport.height
+      };
+
+      // Keep cache bounded (max 10 recent pages to avoid GPU/RAM exhaustion)
+      if (this.pageCache.size > 10) {
+        const firstKey = this.pageCache.keys().next().value;
+        this.pageCache.delete(firstKey);
+      }
+      this.pageCache.set(cacheKey, result);
+
+      return result;
+    } catch (e) {
+      console.error(`Error al renderizar página ${pageNum}:`, e);
+      return this._createFallbackCanvas(pageNum, 'Documento cargado');
     }
+  }
 
-    const result = {
+  _createFallbackCanvas(pageNum, label = '') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 1100;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 800, 1100);
+      ctx.fillStyle = '#333333';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Página ${pageNum}`, 400, 520);
+      if (label) {
+        ctx.fillStyle = '#777777';
+        ctx.font = '16px sans-serif';
+        ctx.fillText(label, 400, 560);
+      }
+    }
+    return {
       pageNum,
       canvas,
-      width: viewport.width,
-      height: viewport.height,
-      aspectRatio: viewport.width / viewport.height
+      width: 800,
+      height: 1100,
+      aspectRatio: 800 / 1100
     };
-
-    // Cache management (keep up to 30 recent pages to preserve memory)
-    if (this.pageCache.size > 30) {
-      const firstKey = this.pageCache.keys().next().value;
-      this.pageCache.delete(firstKey);
-    }
-    this.pageCache.set(cacheKey, result);
-
-    return result;
   }
 
   /**
@@ -231,7 +269,6 @@ class PDFEngine {
         return '';
       }
 
-      // Group items into lines and paragraphs by Y position
       let lines = [];
       let currentLine = [];
       let lastY = null;
@@ -266,12 +303,10 @@ class PDFEngine {
         });
       }
 
-      // Format lines into readable paragraphs
       let paragraphs = [];
       let currentPara = [];
       for (const line of lines) {
         if (!line.text) continue;
-        // If line is significantly bigger font, treat as heading
         if (line.fontSize > 16) {
           if (currentPara.length > 0) {
             paragraphs.push(currentPara.join(' '));
@@ -294,35 +329,16 @@ class PDFEngine {
       this.pageTexts.set(pageNum, fullText);
       return fullText;
     } catch (e) {
-      console.warn(`Error extracting text for page ${pageNum}:`, e);
+      console.warn(`Error al extraer texto en página ${pageNum}:`, e);
       return '';
     }
   }
 
-  /**
-   * Pre-extract all pages text for full-text search and EPUB export
-   */
-  async extractAllText(onProgress) {
-    const all = [];
-    for (let p = 1; p <= this.numPages; p++) {
-      const text = await this.extractPageText(p);
-      all.push({ pageNum: p, text });
-      if (onProgress) {
-        onProgress(p, this.numPages);
-      }
-    }
-    return all;
-  }
-
-  /**
-   * Get High Quality Data URL image of a page (e.g. for cover or standalone export)
-   */
-  async getPageDataUrl(pageNum, format = 'image/jpeg', quality = 0.88) {
+  async getPageDataUrl(pageNum, format = 'image/jpeg', quality = 0.85) {
     const rendered = await this.renderPage(pageNum);
     if (!rendered || !rendered.canvas) return null;
     return rendered.canvas.toDataURL(format, quality);
   }
 }
 
-// Global instance
 window.pdfEngine = new PDFEngine();

@@ -361,27 +361,32 @@ class LuminaApp {
   }
 
   async _loadPDFFromBuffer(arrayBuffer, originalFileName, existingBookId = null, initialPage = 1, shouldSave = false, fileSize = 0) {
-    const result = await window.pdfEngine.loadDocument(arrayBuffer, (percent) => {
-      this.dom.pageBadgePill.innerText = `${percent}%`;
+    // Keep an intact copy of raw bytes before passing to PDF.js
+    const safeBuffer = arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer;
+
+    const result = await window.pdfEngine.loadDocument(safeBuffer, (percent) => {
+      if (this.dom.pageBadgePill) this.dom.pageBadgePill.innerText = `${percent}%`;
     });
 
+    // Instant lightweight page list (does not exhaust browser canvas memory)
     const pages = [];
-    let coverThumb = null;
-
     for (let p = 1; p <= result.numPages; p++) {
-      const rendered = await window.pdfEngine.renderPage(p);
-      const text = await window.pdfEngine.extractPageText(p);
-
-      if (p === 1 && rendered && rendered.canvas) {
-        coverThumb = rendered.canvas.toDataURL('image/jpeg', 0.7);
-      }
-
       pages.push({
         pageNum: p,
         title: `Página ${p}`,
-        canvas: rendered.canvas,
-        text: text
+        text: ''
       });
+    }
+
+    // Safely generate cover thumbnail from page 1 only
+    let coverThumb = null;
+    try {
+      const coverRender = await window.pdfEngine.renderPage(1);
+      if (coverRender && coverRender.canvas) {
+        coverThumb = coverRender.canvas.toDataURL('image/jpeg', 0.65);
+      }
+    } catch (e) {
+      console.warn('Extracción de portada omitida:', e);
     }
 
     const title = result.metadata.title || originalFileName.replace(/\.[^/.]+$/, "");
@@ -402,11 +407,11 @@ class LuminaApp {
           title,
           author,
           fileName: originalFileName,
-          fileSize: fileSize || arrayBuffer.byteLength,
+          fileSize: fileSize || safeBuffer.byteLength,
           totalPages: result.numPages,
           lastPage: initialPage,
           coverThumbnail: coverThumb,
-          fileData: arrayBuffer
+          fileData: safeBuffer
         });
         if (savedRecord) {
           this.currentBookId = savedRecord.id;
@@ -783,8 +788,7 @@ class LuminaApp {
   }
 
   // --- Search Engine ---
-  handleSearch(query) {
-    const results = window.bookAnnotations.search(query, this.pages);
+  async handleSearch(query) {
     const container = this.dom.searchResultsContainer;
     const countEl = this.dom.searchResultsCount;
 
@@ -794,6 +798,17 @@ class LuminaApp {
       return;
     }
 
+    // Extract text for pages if not yet cached
+    if (window.pdfEngine && window.pdfEngine.isLoaded && (!this.pages[0] || !this.pages[0].text)) {
+      countEl.innerText = 'Buscando en páginas...';
+      for (let i = 0; i < Math.min(50, this.pages.length); i++) {
+        if (!this.pages[i].text) {
+          this.pages[i].text = await window.pdfEngine.extractPageText(this.pages[i].pageNum || (i + 1));
+        }
+      }
+    }
+
+    const results = window.bookAnnotations.search(query, this.pages);
     countEl.innerText = `${results.length} coincidencias`;
 
     if (results.length === 0) {
@@ -814,10 +829,16 @@ class LuminaApp {
   }
 
   // --- Text-To-Speech (Audiolibro) ---
-  toggleTTS() {
+  async toggleTTS() {
     if (!window.bookTTS.isPlaying) {
       const pageData = this.pages[this.currentPage - 1];
-      const textToRead = pageData ? (pageData.text || '') : '';
+      let textToRead = pageData ? (pageData.text || '') : '';
+
+      // If text hasn't been extracted for this page yet, extract it on demand
+      if (!textToRead.trim() && window.pdfEngine && window.pdfEngine.isLoaded) {
+        textToRead = await window.pdfEngine.extractPageText(this.currentPage);
+        if (pageData) pageData.text = textToRead;
+      }
 
       if (!textToRead.trim()) {
         this.showToast('No hay texto detectable en esta página para leer.', 'warning');
@@ -870,6 +891,16 @@ class LuminaApp {
           coverUrl = this.pages[0].canvas.toDataURL('image/jpeg', 0.85);
         } else if (this.pages[0].imageData) {
           coverUrl = this.pages[0].imageData;
+        } else if (window.pdfEngine && window.pdfEngine.isLoaded) {
+          coverUrl = await window.pdfEngine.getPageDataUrl(1);
+        }
+      }
+
+      // Ensure text is extracted for pages before packaging
+      for (let i = 0; i < this.pages.length; i++) {
+        const p = this.pages[i];
+        if (!p.text && window.pdfEngine && window.pdfEngine.isLoaded) {
+          p.text = await window.pdfEngine.extractPageText(p.pageNum || (i + 1));
         }
       }
 
