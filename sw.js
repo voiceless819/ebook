@@ -11,6 +11,7 @@ const ASSETS_TO_CACHE = [
   './vendor/jszip.min.js',
   './vendor/pdf.min.js',
   './vendor/pdf.worker.min.js',
+  './js/storage.js',
   './js/audio.js',
   './js/tts.js',
   './js/pdf-engine.js',

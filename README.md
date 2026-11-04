@@ -1,137 +1,88 @@
-# 📖 LuminaBook — Visualizador y Conversor de PDF a eBook 3D
+# LuminaBook — Visor de PDF, Catálogo Local y Conversor a eBook
 
-> **LuminaBook** es una aplicación web estática, autónoma y táctil que transforma documentos PDF en una experiencia de lectura viva y humana, con capacidad de exportación a **EPUB 3.0 estándar**, **Flipbook HTML autónomo** y **Markdown**.
->
-> 🚀 **100% Client-Side:** No requiere ningún backend, base de datos ni servidor. Funciona directamente en el navegador y está listo para ser alojado gratis en **GitHub Pages**.
+LuminaBook es una aplicación web estática para visualizar documentos PDF, organizarlos en un **catálogo personal persistente en el navegador** y convertirlos a formato **EPUB 3.0 estándar**, **Flipbook HTML autónomo** y **Markdown**.
 
----
-
-## 🌐 Despliegue Inmediato en GitHub Pages (Sin Servidor)
-
-Dado que **LuminaBook** es 100% estático (HTML5, CSS3, JS Vanilla), puedes publicarlo gratis en GitHub Pages en menos de 2 minutos:
-
-### Paso 1: Crear el repositorio en GitHub
-1. Ve a [GitHub](https://github.com/new) y crea un nuevo repositorio (por ejemplo, `luminabook` o `visualizador-pdf`).
-2. Déjalo **Público** (para GitHub Pages gratuito).
-
-### Paso 2: Subir el código desde tu equipo
-Abre tu terminal en esta carpeta y ejecuta:
-```bash
-git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
-git push -u origin main
-```
-
-### Paso 3: Activar GitHub Pages
-En la página de tu repositorio en GitHub:
-1. Ve a **Settings** (Configuración) > pestaña **Pages** (en el menú lateral izquierdo).
-2. En **Build and deployment** > **Source**:
-   * Si eliges **GitHub Actions**: Ya dejamos listo el archivo `.github/workflows/deploy.yml` para desplegar automáticamente con cada push.
-   * O si prefieres **Deploy from a branch**: Elige la rama `main` y la carpeta `/ (root)`, luego pulsa **Save**.
-3. En unos segundos tu aplicación estará activa en:
-   ```text
-   https://TU_USUARIO.github.io/TU_REPOSITORIO/
-   ```
-
-¡Y listo! Ya puedes compartir ese enlace o abrirlo desde cualquier teléfono móvil, tablet u ordenador.
+Funciona 100% en el cliente (navegador), sin enviar tus archivos a ningún servidor externo.
 
 ---
 
-## 📱 Uso en Móviles y Tablets (PWA)
-Una vez abierto en GitHub Pages desde Safari (iOS/iPadOS) o Chrome (Android):
-1. Toca el botón **Compartir** o los **tres puntos** del navegador.
-2. Selecciona **"Añadir a la pantalla de inicio"**.
-3. La aplicación se instalará como una App nativa con pantalla completa, soporte táctil fluido y funcionamiento sin conexión a internet.
+## Despliegue en GitHub Pages
+
+La aplicación está publicada y activa en GitHub Pages:
+* **Enlace directo:** [https://voiceless819.github.io/ebook/](https://voiceless819.github.io/ebook/)
+* **Repositorio de código:** [https://github.com/voiceless819/ebook](https://github.com/voiceless819/ebook)
 
 ---
 
-## ✨ Características Principales
+## Características
 
-### 1. 📚 Modo Libro 3D Realista (Flipbook)
-* **Doble página en ordenador y tablet horizontal**: Reproduce la sensación de un libro abierto con lomo central y sombras de encuadernación.
-* **Página simple en móviles y modo vertical**: Adaptación responsiva automática para lectura ergonómica con una sola mano.
-* **Física y curvatura 3D**: Animación de giro de página con proyección de sombras que varían dinámicamente con el ángulo.
-* **Esquinas interactivas (*Dog-Ear*)**: Al pasar el ratón o el dedo cerca de la esquina inferior, la hoja se comba invitando al paso.
-* **Síntesis acústica de papel**: Efecto de sonido de fricción de papel generado en tiempo real con Web Audio API (100% offline, sin necesidad de archivos MP3 externos).
+### 1. Catálogo Personal y Almacenamiento Local (IndexedDB)
+* **Persistencia en el dispositivo:** Cada PDF que añades se almacena de forma segura en la base de datos interna de tu navegador (IndexedDB).
+* **Capacidad:** Almacena múltiples documentos y cientos de megabytes según el espacio en disco de tu dispositivo.
+* **Memoria de lectura:** Guarda la última página leída y la restablece automáticamente al abrir el documento.
+* **Privacidad total:** Tus documentos nunca salen de tu ordenador, tablet o teléfono móvil.
+* **Acceso sin conexión:** Los documentos del catálogo están disponibles incluso sin conexión a internet.
 
-### 2. ⚡ Modo eBook Dinámico / Liquid Reflow Reader
-* **Reflujo de texto adaptativo**: Convierte el PDF en texto líquido responsive como un Kindle o Apple Books.
-* **Lectura Biónica (*Bionic Reading*)**: Resalta las primeras letras de cada palabra para acelerar la velocidad lectora y reducir la fatiga cognitiva.
-* **Tipografías editoriales**: Serif clásica (Georgia/Merriweather), Sans moderna (Inter), OpenDyslexic (adaptada para dislexia) y Monoespaciada.
-* **Control métrico**: Ajuste en vivo de tamaño de letra (14px - 32px), interlineado (1.4x - 2.4x) y márgenes.
+### 2. Modos de Lectura
+* **Vista Libro (3D Flipbook):**
+  * Doble página en pantallas panorámicas con lomo central y curvatura 3D.
+  * Página simple en smartphones y orientación vertical.
+  * Animación de pase de página interactiva.
+  * Síntesis acústica de pase de página en tiempo real (Web Audio API).
+* **Vista Texto (Reflow Continuo):**
+  * Extracción y reflujo de texto para lectura continua.
+  * Modo de Lectura Biónica para acelerar la velocidad de fijación visual.
+  * Control métrico de tamaño de letra (14px - 30px), interlineado y tipografías (Sans, Serif, OpenDyslexic, Monospace).
 
-### 3. 🎨 Estilo Humano y Ambientes Inmersivos
-* **6 Temas de Papel**:
-  * 📜 **Pergamino Clásico**: Tono sepia cálido reconfortante.
-  * 📖 **Novela Marfil**: Fondo suave crema de edición de bolsillo.
-  * ☀️ **Blanco Editorial**: Alto contraste y nitidez limpia.
-  * 🌙 **Carbón Nocturno**: Fondo pizarra suave para leer en penumbra.
-  * 🖤 **OLED Negro Puro**: Negro absoluto `#000000` para ahorrar batería en pantallas móviles AMOLED.
-  * 📟 **E-Ink Paper**: Simulación de tinta electrónica de bajo brillo.
-* **Paisajes Sonoros Ambientales**:
-  * Generador procedural de Lluvia Suave, Silencio de Biblioteca y Café Acogedor con control de volumen independiente.
+### 3. Controles Táctiles y de Navegación
+* **Deslizar (Swipe):** Pasa de página arrastrando horizontalmente con el dedo.
+* **Zonas de Toque:**
+  * Margen izquierdo (20%): Retroceder página.
+  * Margen derecho (20%): Avanzar página.
+  * Zona central (60%): Ocultar o mostrar las barras de control (modo inmersivo).
+* **Pellizco para Zoom:** Ampliación con dos dedos en tablets y móviles.
+* **Teclado:** Flechas izquierda y derecha, barra espaciadora, tecla F (pantalla completa), tecla M (alternar modo).
 
-### 4. 📱 Controles Táctiles en Todos los Dispositivos
-* **Deslizar / Swipe**: Pasa páginas arrastrando suavemente hacia la izquierda o derecha con detección de inercia.
-* **Navegación por Zonas Táctiles**:
-  * **Margen Izquierdo (20%)**: Retroceder página.
-  * **Margen Derecho (20%)**: Avanzar página.
-  * **Zona Central (60%)**: Ocultar/Mostrar barras de herramientas (modo de inmersión total sin distracciones).
-* **Pellizco para Zoom (*Pinch-to-zoom*)**: Amplía cualquier gráfico o texto con dos dedos.
-* **Doble Toque**: Restablece el zoom o encaja a pantalla completa.
-* **Barra de navegación táctil inferior (*Scrubber*)**: Arrastra el control deslizante para desplazarte rápidamente por todo el volumen.
+### 4. Audiolibro (Text-to-Speech)
+* Lectura en voz alta del texto del documento con selector de velocidad (0.8x, 1.0x, 1.2x, 1.5x).
+* Paso automático de página al completar la lectura de cada hoja.
 
-### 5. 🎧 Audiolibro con Voz Humana (Text-to-Speech)
-* Lee en voz alta la página actual utilizando la síntesis de voz natural del sistema operativo.
-* Selector de velocidad (0.8x, 1.0x, 1.2x, 1.5x).
-* Resaltado dinámico frase a frase en una barra flotante estilizada.
-* **Paso de página automático**: Al terminar de leer la página, avanza a la siguiente sin intervención manual.
-
-### 6. 📦 Suite de Conversión y Exportación
-* **📕 eBook EPUB 3.0 Estándar**: Empaqueta un archivo `.epub` 100% válido (con `mimetype` sin comprimir, `container.xml`, `content.opf`, `nav.xhtml`, `toc.ncx` e imagen de portada generada de la página 1). Compatible con Apple Books, Calibre, Kindle y Google Play Libros.
-* **🌐 Flipbook HTML Autónomo**: Genera un archivo `.html` único y ligero con todo el contenido y visor 3D embebido. Puedes enviarlo por correo o WhatsApp y cualquiera puede abrirlo sin instalar nada.
-* **📝 Markdown Editorial (.md)**: Extrae los títulos, capítulos y cuerpo de texto con formato limpio para Obsidian, Notion o blogs.
-* **📄 Texto Plano (.txt)**: Transcripción completa y limpia.
-* **🔖 Exportación de Notas y Marcadores**: Resumen descargable de todas tus reflexiones, citas y estadísticas de lectura.
+### 5. Conversión y Exportación
+* **eBook EPUB 3.0 Estándar:** Empaquetado completo compatible con Apple Books, Kindle, Calibre y Kobo.
+* **Flipbook HTML Autónomo:** Un único archivo web independiente que incluye el visor 3D para abrir en cualquier dispositivo sin internet.
+* **Markdown (.md):** Texto limpio estructurado por encabezados y secciones.
+* **Texto Plano (.txt):** Transcripción simple de texto.
+* **Anotaciones (.md):** Informe descargable de marcadores, notas al margen y estadísticas de lectura.
 
 ---
 
-## 💻 Ejecución Local Opcional (Si alguna vez la necesitas)
-Si deseas probarlo localmente sin internet, puedes simplemente:
-* Abrir directamente `index.html` en tu navegador.
-* O si estás en Windows, hacer doble clic en `start_app.bat`.
-
----
-
-## 📂 Estructura del Repositorio
+## Estructura del Repositorio
 
 ```text
-├── index.html              # Aplicación estática principal
+├── index.html              # Interfaz de usuario
 ├── manifest.json           # Manifiesto PWA para instalación móvil
-├── sw.js                   # Service Worker (offline caching)
-├── .nojekyll               # Desactiva el procesamiento Jekyll en GitHub Pages
-├── .gitignore              # Ignora temporales del sistema
-├── .github/
-│   └── workflows/
-│       └── deploy.yml      # Despliegue automatizado en GitHub Pages
+├── sw.js                   # Service Worker para funcionamiento offline
+├── .nojekyll               # Desactiva el procesador Jekyll en GitHub Pages
+├── .gitignore              # Filtro de archivos locales
+├── .github/workflows/
+│   └── deploy.yml          # Flujo de despliegue automatizado en GitHub Pages
 ├── css/
-│   └── styles.css          # Estilos 3D, temas de lectura y responsive
+│   └── styles.css          # Estilos visuales y diseño responsive
 ├── js/
-│   ├── app.js              # Orquestador general
-│   ├── audio.js            # Síntesis procedural de sonido de papel y ambiente
-│   ├── tts.js              # Audiolibro Text-to-Speech
-│   ├── pdf-engine.js       # Renderizado HD y extracción con PDF.js
-│   ├── epub-engine.js      # Empaquetador y lector de EPUB 3.0
-│   ├── exporter.js         # Exportador a HTML autónomo, Markdown y notas
-│   ├── flipbook.js         # Motor 3D del libro y física de giro
-│   ├── reflow-reader.js    # Lector de texto líquido y lectura biónica
-│   ├── gestures.js         # Controlador táctil (swipe, pinch zoom, toques)
-│   ├── annotations.js      # Marcadores, notas, buscador y analíticas
-│   └── demo-book.js        # Obra maestra ilustrada de demostración incluida
-├── vendor/
-│   ├── pdf.min.js          # Mozilla PDF.js
-│   ├── pdf.worker.min.js   # Worker de procesamiento de PDF
-│   └── jszip.min.js        # Compresor ZIP para empaquetar EPUBs
-└── assets/
-    ├── icon-192.png        # Icono PWA
-    └── icon-512.png        # Icono PWA HD
+│   ├── app.js              # Coordinador de la aplicación
+│   ├── storage.js          # Gestor de IndexedDB y catálogo personal
+│   ├── audio.js            # Generador acústico de sonido de hojas
+│   ├── tts.js              # Motor Text-to-Speech
+│   ├── pdf-engine.js       # Renderizado de PDF con PDF.js
+│   ├── epub-engine.js      # Empaquetador EPUB 3.0
+│   ├── exporter.js         # Exportador a HTML autónomo y Markdown
+│   ├── flipbook.js         # Motor 3D del libro
+│   ├── reflow-reader.js    # Lector de texto continuo y lectura biónica
+│   ├── gestures.js         # Gestor táctil (swipe, pinch zoom, toques)
+│   ├── annotations.js      # Marcadores, notas y buscador
+│   └── demo-book.js        # Manual de usuario inicial
+└── vendor/
+    ├── pdf.min.js          # Librería PDF.js
+    ├── pdf.worker.min.js   # Worker de procesamiento de PDF
+    └── jszip.min.js        # Librería de compresión ZIP
 ```
