@@ -372,8 +372,8 @@ html, body {
 
 .book-3d-wrapper {
   position: relative;
-  width: min(92vw, 1100px);
-  height: min(78vh, 720px);
+  width: min(96vw, 1440px);
+  height: min(86vh, 920px);
   display: flex;
   transform-style: preserve-3d;
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -382,7 +382,8 @@ html, body {
 }
 
 .book-3d-wrapper.single-mode {
-  width: min(92vw, 680px);
+  width: min(94vw, 860px);
+  height: min(88vh, 940px);
   margin: 0 auto;
 }
 
@@ -551,14 +552,50 @@ html, body {
   box-sizing: border-box;
 }
 
+/* Zero padding for authentic full-page PDF documents & high-resolution canvases */
+.page-content-wrapper.pdf-page-wrapper {
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #ffffff !important;
+}
+
+.pdf-page-wrapper .rendered-page-container {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
 .rendered-page-canvas, .rendered-page-image {
   max-width: 100%;
   max-height: 100%;
   width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: contain;
   display: block;
   margin: auto;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: high-quality;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.page-paper:has(.pdf-page-wrapper) {
+  overflow: hidden !important;
 }
 
 .page-footer-stamp {

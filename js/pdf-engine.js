@@ -18,7 +18,15 @@ class PDFEngine {
     this.pageCache = new Map(); // pageNum -> { canvas, width, height, aspectRatio }
     this.pageTexts = new Map(); // pageNum -> extracted text string
     this.structuredPages = [];
-    this.renderScale = Math.min(1.8, window.devicePixelRatio || 1.5);
+
+    // High-DPI Crisp Vector Rasterization Scale:
+    // Determine dynamic scale: On standard displays (DPR 1.0 - 1.25), use at least 2.6x to 2.8x
+    // On Retina/High-DPI displays (DPR >= 2), use 2.8x to 3.2x so text is razor sharp.
+    const dpr = window.devicePixelRatio || 1;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    this.renderScale = isMobile 
+      ? Math.min(2.5, Math.max(2.0, dpr * 1.25)) 
+      : Math.min(3.2, Math.max(2.6, dpr * 1.5));
     this.isLoaded = false;
 
     // Configure PDF.js worker
@@ -177,15 +185,24 @@ class PDFEngine {
       return this._createFallbackCanvas(pageNum, 'Página fuera de rango');
     }
 
-    const cacheKey = `${pageNum}_${customScale || this.renderScale}`;
+    const scale = customScale || this.renderScale;
+    const cacheKey = `${pageNum}_${Math.round(scale * 100)}`;
     if (this.pageCache.has(cacheKey)) {
       return this.pageCache.get(cacheKey);
     }
 
     try {
       const page = await this.pdfDoc.getPage(pageNum);
-      const scale = customScale || Math.min(1.8, this.renderScale);
-      const viewport = page.getViewport({ scale });
+      
+      // Determine safe scale to prevent GPU canvas overflows on abnormal posters/CAD sheets
+      const unscaledViewport = page.getViewport({ scale: 1.0 });
+      let finalScale = scale;
+      const basePixels = unscaledViewport.width * unscaledViewport.height;
+      if (basePixels * (finalScale * finalScale) > 8000000) {
+        finalScale = Math.sqrt(8000000 / basePixels);
+      }
+
+      const viewport = page.getViewport({ scale: finalScale });
 
       const canvas = document.createElement('canvas');
       canvas.width = Math.max(1, Math.floor(viewport.width));
@@ -195,6 +212,9 @@ class PDFEngine {
       if (!ctx) {
         throw new Error('No se pudo inicializar el contexto 2D del canvas');
       }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);

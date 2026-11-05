@@ -403,12 +403,20 @@ class FlipbookCore {
     contentDiv.className = 'page-content-wrapper';
     contentDiv.dataset.page = pageNum;
 
+    const isPdfDoc = (window.pdfEngine && window.pdfEngine.isLoaded && pageNum <= window.pdfEngine.numPages);
+    if (isPdfDoc || pageData.canvas || pageData.imageData) {
+      contentDiv.classList.add('pdf-page-wrapper');
+    }
+
     if (pageData.canvas) {
       const clonedCanvas = document.createElement('canvas');
       clonedCanvas.width = pageData.canvas.width;
       clonedCanvas.height = pageData.canvas.height;
-      const ctx = clonedCanvas.getContext('2d');
-      if (ctx) ctx.drawImage(pageData.canvas, 0, 0);
+      const ctx = clonedCanvas.getContext('2d', { alpha: false });
+      if (ctx) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(pageData.canvas, 0, 0);
+      }
       clonedCanvas.className = 'rendered-page-canvas';
       contentDiv.appendChild(clonedCanvas);
     } else if (pageData.imageData) {
@@ -417,7 +425,7 @@ class FlipbookCore {
       img.className = 'rendered-page-image';
       img.alt = `Página ${pageNum}`;
       contentDiv.appendChild(img);
-    } else if (window.pdfEngine && window.pdfEngine.isLoaded && pageNum <= window.pdfEngine.numPages) {
+    } else if (isPdfDoc) {
       // Lazy on-demand rendering
       const canvasContainer = document.createElement('div');
       canvasContainer.className = 'rendered-page-container';
@@ -434,8 +442,11 @@ class FlipbookCore {
           const clonedCanvas = document.createElement('canvas');
           clonedCanvas.width = rendered.canvas.width;
           clonedCanvas.height = rendered.canvas.height;
-          const ctx = clonedCanvas.getContext('2d');
-          if (ctx) ctx.drawImage(rendered.canvas, 0, 0);
+          const ctx = clonedCanvas.getContext('2d', { alpha: false });
+          if (ctx) {
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(rendered.canvas, 0, 0);
+          }
           clonedCanvas.className = 'rendered-page-canvas';
           canvasContainer.appendChild(clonedCanvas);
         }
@@ -445,7 +456,7 @@ class FlipbookCore {
 
       // Background prefetch next page
       if (pageNum < window.pdfEngine.numPages) {
-        setTimeout(() => window.pdfEngine.renderPage(pageNum + 1).catch(() => {}), 150);
+        setTimeout(() => window.pdfEngine.renderPage(pageNum + 1).catch(() => {}), 120);
       }
     } else {
       const textArticle = document.createElement('article');
@@ -495,10 +506,13 @@ class FlipbookCore {
       }
     }
 
-    const footerStamp = document.createElement('div');
-    footerStamp.className = 'page-footer-stamp';
-    footerStamp.innerHTML = `<span>— ${pageNum} —</span>`;
-    contentDiv.appendChild(footerStamp);
+    // Only append footer stamp for text/manual pages (PDF pages already have their own headers & footers)
+    if (!isPdfDoc && !pageData.canvas && !pageData.imageData) {
+      const footerStamp = document.createElement('div');
+      footerStamp.className = 'page-footer-stamp';
+      footerStamp.innerHTML = `<span>— ${pageNum} —</span>`;
+      contentDiv.appendChild(footerStamp);
+    }
 
     targetEl.appendChild(contentDiv);
   }

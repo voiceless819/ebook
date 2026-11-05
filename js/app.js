@@ -68,9 +68,11 @@ class LuminaApp {
       }
     } catch (e) {}
 
-    // Register PWA Service Worker if served via HTTP/HTTPS
+    // Register PWA Service Worker if served via HTTP/HTTPS & force update check
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      navigator.serviceWorker.register('./sw.js?v=6.0').then(reg => {
+        reg.update();
+      }).catch(() => {});
     }
   }
 
@@ -1264,8 +1266,11 @@ class LuminaApp {
                   const c = document.createElement('canvas');
                   c.width = res.canvas.width;
                   c.height = res.canvas.height;
-                  const ctx = c.getContext('2d');
-                  ctx.drawImage(res.canvas, 0, 0);
+                  const ctx = c.getContext('2d', { alpha: false });
+                  if (ctx) {
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(res.canvas, 0, 0);
+                  }
                   c.className = 'scroll-page-canvas';
                   slot.appendChild(c);
                 }

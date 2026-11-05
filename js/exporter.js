@@ -167,6 +167,7 @@ class UniversalExporter {
 
     for (let i = 0; i < total; i++) {
       const item = pageCanvases[i];
+      if (!item || !item.canvas) continue;
       const pageNum = String(item.pageNum || (i + 1)).padStart(3, '0');
       const dataUrl = item.canvas.toDataURL('image/png');
       const base64 = dataUrl.split(',')[1];
