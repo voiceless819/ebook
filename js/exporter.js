@@ -84,7 +84,7 @@ class UniversalExporter {
       md += `**Citas destacadas:** ${annotationsData.highlights?.length || 0}\n\n---\n\n`;
 
       if (annotationsData.bookmarks && annotationsData.bookmarks.length > 0) {
-        md += `### 🔖 Marcadores\n`;
+        md += `### Marcadores\n`;
         annotationsData.bookmarks.forEach(bm => {
           md += `- **Página ${bm.page}:** ${bm.title || 'Marcador'} (${bm.date || ''})\n`;
         });
@@ -92,7 +92,7 @@ class UniversalExporter {
       }
 
       if (annotationsData.highlights && annotationsData.highlights.length > 0) {
-        md += `### ✨ Citas y Subrayados\n`;
+        md += `### Citas y Subrayados\n`;
         annotationsData.highlights.forEach(h => {
           md += `> "${h.text}"\n`;
           md += `*— Página ${h.page} [${h.color || 'amarillo'}]*\n\n`;
@@ -100,7 +100,7 @@ class UniversalExporter {
       }
 
       if (annotationsData.notes && annotationsData.notes.length > 0) {
-        md += `### 📝 Notas Personales\n`;
+        md += `### Notas Personales\n`;
         annotationsData.notes.forEach(n => {
           md += `#### Página ${n.page} (${n.date || ''})\n`;
           md += `${n.content}\n\n`;
@@ -109,6 +109,49 @@ class UniversalExporter {
 
       this.downloadFile(md, filename, 'text/markdown;charset=utf-8');
     }
+  }
+
+  /**
+   * Export Specific Page Range (Extract) to Markdown, Plain Text or EPUB
+   */
+  exportPageRange(title, author, pages, format = 'md', startPage = 1, endPage = 1) {
+    const s = Math.max(1, Math.min(pages.length, parseInt(startPage) || 1));
+    const e = Math.max(s, Math.min(pages.length, parseInt(endPage) || s));
+    const sliced = pages.slice(s - 1, e);
+    const extractTitle = `${title || 'Libro'} (Páginas ${s}-${e})`;
+
+    if (format === 'txt') {
+      this.exportToText(extractTitle, author, sliced);
+    } else if (format === 'epub' && window.epubEngine) {
+      window.epubEngine.generateEPUB({
+        title: extractTitle,
+        author: author || 'Autor',
+        pages: sliced
+      });
+    } else {
+      this.exportToMarkdown(extractTitle, author, sliced);
+    }
+  }
+
+  /**
+   * Export Academic Citations (APA, MLA, Chicago)
+   */
+  exportAcademicCitations(title, author, highlights, format = 'APA') {
+    if (!highlights || highlights.length === 0) return '';
+    let doc = `# Citas Académicas (${format.toUpperCase()})\n`;
+    doc += `**Documento:** ${title || 'Sin título'} — **Autor:** ${author || 'Autor'}\n`;
+    doc += `**Fecha:** ${new Date().toLocaleDateString()}\n\n---\n\n`;
+
+    highlights.forEach((h, idx) => {
+      if (window.bookAnnotations) {
+        doc += `${idx + 1}. ${window.bookAnnotations.formatCitation(h.text, format, { title, author, page: h.page })}\n\n`;
+      } else {
+        doc += `${idx + 1}. "${h.text}" (${author}, p. ${h.page})\n\n`;
+      }
+    });
+
+    const filename = `Citas_${format}_${(title || 'libro').replace(/[\\/:*?"<>|]/g, '_')}.md`;
+    this.downloadFile(doc, filename, 'text/markdown;charset=utf-8');
   }
 
   /**

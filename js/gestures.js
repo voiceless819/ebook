@@ -1,19 +1,22 @@
 /**
- * LuminaBook - Touch Gestures & Mobile Experience Engine
- * Touch swipe, pinch-to-zoom, edge taps, HUD auto-hide & full mobile/tablet compatibility.
+ * LuminaBook - Touch Gestures & Multi-Touch Experience Engine
+ * Touch swipe, pinch-to-zoom, edge taps, HUD auto-hide,
+ * 2-finger tap to go back, and 3-finger tap to reset zoom.
  */
 
 class GestureController {
   constructor(targetEl, handlers = {}) {
     this.target = targetEl;
     this.handlers = Object.assign({
-      onSwipeLeft: null,    // Next page
-      onSwipeRight: null,   // Prev page
-      onTapLeft: null,      // Prev page tap
-      onTapRight: null,     // Next page tap
-      onTapCenter: null,    // Toggle controls / HUD
-      onPinchZoom: null,    // Multi-touch pinch zoom
-      onDoubleTap: null     // Double tap zoom reset
+      onSwipeLeft: null,         // Next page
+      onSwipeRight: null,        // Prev page
+      onTapLeft: null,           // Prev page tap
+      onTapRight: null,          // Next page tap
+      onTapCenter: null,         // Toggle controls / HUD
+      onPinchZoom: null,         // Multi-touch pinch zoom
+      onDoubleTap: null,         // Double tap zoom reset
+      onTwoFingerTap: null,      // Two finger tap -> Previous page
+      onThreeFingerTap: null     // Three finger tap -> Reset zoom
     }, handlers);
 
     this.touchStartX = 0;
@@ -24,6 +27,9 @@ class GestureController {
     this.lastTapTime = 0;
     this.tapThreshold = 250; // ms for tap
     this.minSwipeDistance = 45; // px
+
+    this.twoFingerStartTime = 0;
+    this.threeFingerStartTime = 0;
 
     this.initTouchListeners();
   }
@@ -41,8 +47,13 @@ class GestureController {
   }
 
   _handleTouchStart(e) {
+    if (e.touches.length === 3) {
+      this.threeFingerStartTime = Date.now();
+      return;
+    }
+
     if (e.touches.length === 2) {
-      // Two finger pinch start
+      this.twoFingerStartTime = Date.now();
       this.isPinching = true;
       this.initialPinchDistance = this._getTouchDistance(e.touches[0], e.touches[1]);
       return;
@@ -67,18 +78,36 @@ class GestureController {
       return;
     }
 
-    // Single touch move: if horizontal swipe is prominent, prevent vertical scroll
     if (e.touches.length === 1) {
       const dx = Math.abs(e.touches[0].clientX - this.touchStartX);
       const dy = Math.abs(e.touches[0].clientY - this.touchStartY);
       if (dx > dy && dx > 15) {
-        // Horizontal gesture intended
         e.preventDefault();
       }
     }
   }
 
   _handleTouchEnd(e) {
+    const now = Date.now();
+
+    // 3-Finger Tap Detection (Reset Zoom)
+    if (this.threeFingerStartTime && (now - this.threeFingerStartTime < 350)) {
+      this.threeFingerStartTime = 0;
+      if (this.handlers.onThreeFingerTap) {
+        this.handlers.onThreeFingerTap();
+        return;
+      }
+    }
+
+    // 2-Finger Tap Detection (Go to Previous Page)
+    if (this.twoFingerStartTime && (now - this.twoFingerStartTime < 300) && !this.isPinching) {
+      this.twoFingerStartTime = 0;
+      if (this.handlers.onTwoFingerTap) {
+        this.handlers.onTwoFingerTap();
+        return;
+      }
+    }
+
     if (this.isPinching) {
       this.isPinching = false;
       this.initialPinchDistance = 0;
@@ -95,7 +124,6 @@ class GestureController {
     const absY = Math.abs(deltaY);
 
     // Double Tap detection
-    const now = Date.now();
     if (now - this.lastTapTime < 320 && absX < 20 && absY < 20) {
       if (this.handlers.onDoubleTap) {
         this.handlers.onDoubleTap(touch.clientX, touch.clientY);
@@ -120,7 +148,7 @@ class GestureController {
       return;
     }
 
-    // Single tap on screen zones (only if finger barely moved)
+    // Single tap on screen zones
     if (absX < 15 && absY < 15 && deltaTime < this.tapThreshold) {
       const rect = this.target.getBoundingClientRect();
       const relativeX = (touch.clientX - rect.left) / rect.width;

@@ -1307,3 +1307,1086 @@ html, body {
   .page-content-wrapper { padding: 18px 16px 28px; }
   .manual-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   ADVANCED FEATURES & ENHANCEMENTS (3D Physics, Study Suite & Visuals)
+   ========================================================================== */
+
+/* 1. Continuous Vertical Scroll Mode */
+#panelScroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 30px 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vertical-scroll-container {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.scroll-page-slot {
+  width: 100%;
+  background: var(--paper-bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  position: relative;
+  min-height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: box-shadow 0.2s;
+}
+
+.scroll-page-slot canvas,
+.scroll-page-slot img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.scroll-page-slot .page-number-tag {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 0.72rem;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+/* 2. Solo Mode (Zen / Solo Libro 100vw/100vh) */
+body.solo-mode-active .app-header,
+body.solo-mode-active .app-bottom-hud,
+body.solo-mode-active .floating-show-ui-btn {
+  display: none !important;
+}
+
+body.solo-mode-active .reader-workspace {
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  padding: 0 !important;
+}
+
+body.solo-mode-active .flipbook-stage {
+  padding: 0;
+  max-width: 100vw;
+  max-height: 100vh;
+}
+
+body.solo-mode-active .book-3d-wrapper {
+  width: 98vw;
+  height: 96vh;
+}
+
+.floating-exit-solo-btn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: rgba(18, 20, 24, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  z-index: 1000;
+  opacity: 0.25;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.floating-exit-solo-btn:hover {
+  opacity: 1;
+  background: rgba(18, 20, 24, 0.95);
+}
+
+/* 3. Color Temperature (Blue Light) & Ultra-Dim Overlays */
+.color-temp-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #ff9800;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ultra-dim-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000000;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* 4. Reading Ruler Guide */
+.reading-ruler-guide {
+  position: fixed;
+  left: 0;
+  width: 100vw;
+  height: 38px;
+  background: rgba(255, 235, 59, 0.13);
+  border-top: 2px solid rgba(255, 215, 0, 0.4);
+  border-bottom: 2px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.15);
+  pointer-events: none;
+  z-index: 8000;
+  transition: top 0.05s ease-out;
+}
+
+/* 5. Floating Magnifier Glass */
+.floating-magnifier-glass {
+  position: fixed;
+  width: 150px;
+  height: 150px;
+  border: 3px solid var(--accent-gold);
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 8500;
+  background: #fff;
+}
+
+.magnifier-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.magnifier-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: rgba(212, 175, 55, 0.6);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 6. Reading Tools Popup Menu */
+.reading-tools-trigger-wrapper {
+  position: relative;
+}
+
+.reading-tools-popup-menu {
+  position: absolute;
+  bottom: 46px;
+  right: 0;
+  background: #181a1f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px;
+  display: none;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 215px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+}
+
+.reading-tools-popup-menu.open {
+  display: flex;
+}
+
+.tool-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 0.83rem;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+
+.tool-menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.tool-menu-item svg {
+  color: var(--accent-gold);
+  flex-shrink: 0;
+}
+
+/* 7. Grid Overview Modal */
+.grid-overview-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 16, 19, 0.96);
+  backdrop-filter: blur(14px);
+  z-index: 9000;
+  display: none;
+  flex-direction: column;
+}
+
+.grid-overview-modal.open {
+  display: flex;
+}
+
+.grid-modal-header {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.grid-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+}
+
+.grid-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 20px;
+}
+
+.grid-page-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.grid-page-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent-gold);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.grid-page-card.current-page {
+  border: 2px solid var(--accent-gold);
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.35);
+}
+
+.grid-thumb-slot {
+  width: 100%;
+  height: 155px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-thumb-slot canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.grid-thumb-skeleton {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.15);
+  font-weight: bold;
+}
+
+.grid-card-label {
+  font-size: 0.76rem;
+  color: var(--hud-subtext);
+  margin-top: 6px;
+}
+
+/* 8. Synchronized Sidebar Thumbnails */
+.sidebar-thumbnails-panel {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  bottom: 48px;
+  width: 140px;
+  background: rgba(18, 19, 23, 0.95);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 500;
+  transform: translateX(-100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-thumbnails-panel.open {
+  transform: translateX(0);
+}
+
+.sidebar-thumb-header {
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-thumb-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-thumb-item {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: border-color 0.15s;
+}
+
+.sidebar-thumb-item:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-thumb-item.active {
+  border: 2px solid var(--accent-gold);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+.side-thumb-box {
+  width: 100%;
+  height: 90px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.side-thumb-num {
+  font-size: 0.72rem;
+  color: var(--hud-subtext);
+  margin-top: 4px;
+}
+
+/* 9. Flashcards Modal (Modo Examen 3D) */
+.flashcards-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 11, 14, 0.88);
+  backdrop-filter: blur(12px);
+  z-index: 9000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.flashcards-modal.open {
+  display: flex;
+}
+
+.flashcards-container {
+  width: min(92vw, 500px);
+  background: #18191f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.flashcards-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.flashcard-3d-scene {
+  perspective: 1000px;
+  width: 100%;
+  height: 250px;
+  margin-bottom: 12px;
+}
+
+.flashcard-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.flashcard-card.flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.flashcard-face.front {
+  background: #20222a;
+  color: #fff;
+}
+
+.flashcard-face.back {
+  background: #262a36;
+  color: #e5e7eb;
+  transform: rotateY(180deg);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.flashcard-hint-label {
+  font-size: 0.76rem;
+  color: var(--hud-subtext);
+  margin-bottom: 16px;
+}
+
+.flashcards-controls {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 10. Freehand Drawing Floating Toolbar */
+.drawing-floating-toolbar {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #181a1f;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 30px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  z-index: 8500;
+}
+
+.draw-tool-group,
+.draw-action-group {
+  display: flex;
+  gap: 6px;
+}
+
+.draw-tool-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.draw-tool-btn.active {
+  background: var(--accent-gold);
+  color: #111;
+  border-color: var(--accent-gold);
+}
+
+.draw-color-palette {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.draw-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.draw-color-dot.active {
+  transform: scale(1.25);
+  border-color: #fff;
+}
+
+.draw-size-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.draw-size-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #aaa;
+  font-size: 0.72rem;
+  padding: 3px 7px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.draw-size-btn.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* 11. Page Comparator Modal */
+.page-comparator-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 19, 23, 0.98);
+  z-index: 9000;
+  display: none;
+  flex-direction: column;
+}
+
+.page-comparator-modal.open {
+  display: flex;
+}
+
+.comparator-header {
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.comparator-body {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.comparator-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.comparator-pane-controls {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.82rem;
+  color: var(--hud-subtext);
+}
+
+.comparator-canvas-slot {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+/* 12. One-Hand Thumb Dock */
+.one-hand-thumb-dock {
+  position: fixed;
+  bottom: 75px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2500;
+}
+
+.thumb-nav-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.95);
+  color: #111;
+  border: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.thumb-nav-btn:active {
+  transform: scale(0.92);
+}
+
+/* 13. Catalog Tabs, View Switcher & Table View */
+.catalog-tab-bar {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.catalog-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--hud-subtext);
+  font-size: 0.84rem;
+  font-weight: 500;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.catalog-tab-btn.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.catalog-view-sort-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0;
+  gap: 8px;
+}
+
+.catalog-sort-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--hud-subtext);
+}
+
+.catalog-view-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  padding: 2px;
+}
+
+.view-toggle-btn {
+  background: transparent;
+  border: none;
+  color: var(--hud-subtext);
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.view-toggle-btn.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.catalog-tags-chip-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  scrollbar-width: none;
+}
+
+.catalog-tag-chip {
+  font-size: 0.74rem;
+  padding: 3px 9px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #aaa;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.15s;
+}
+
+.catalog-tag-chip.active {
+  background: var(--accent-gold);
+  color: #111;
+  border-color: var(--accent-gold);
+  font-weight: 500;
+}
+
+.reading-stats-summary-card {
+  display: flex;
+  justify-content: space-around;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+.stat-metric-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-number {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--hud-subtext);
+}
+
+/* Compact Table View in Catalog */
+.catalog-table-view {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.catalog-table-view th {
+  text-align: left;
+  padding: 8px 6px;
+  color: var(--hud-subtext);
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.catalog-table-view td {
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #eee;
+}
+
+.catalog-table-view tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* 14. High Contrast & Smart Dark Mode Inversion Filters */
+body.scan-high-contrast .rendered-page-canvas,
+body.scan-high-contrast .rendered-page-image,
+body.scan-high-contrast .page-content-wrapper {
+  filter: contrast(1.5) brightness(1.1) grayscale(0.85) !important;
+}
+
+body.smart-dark-invert .rendered-page-canvas,
+body.smart-dark-invert .page-content-wrapper {
+  filter: invert(0.92) hue-rotate(180deg) !important;
+}
+
+body.smart-dark-invert img,
+body.smart-dark-invert .rendered-page-image {
+  filter: invert(1) hue-rotate(180deg) !important;
+}
+
+/* 15. Sticky Note Coordinate Pins */
+.page-sticky-pin {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  z-index: 20;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s;
+}
+
+.page-sticky-pin:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+}
+
+/* 16. Pastel Highlighter Palette */
+.highlighter-color-picker {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.hl-swatch-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.hl-swatch-btn.active {
+  transform: scale(1.2);
+  border-color: #fff;
+}
+
+/* 17. Left & Right Corner Curl Hints (Interactive Peel) */
+.corner-curl-hint.left {
+  left: 0;
+  right: auto;
+  border-width: 0 0 28px 28px;
+  border-color: transparent transparent transparent var(--page-curl-color);
+}
+
+.corner-curl-hint.right {
+  right: 0;
+  border-width: 0 0 28px 28px;
+  border-color: transparent transparent var(--page-curl-color) transparent;
+}
+
+.corner-curl-hint:active {
+  transform: scale(1.15);
+}
+
+/* 18. Modals (Cover Generator, QR Share, Metadata Edit) */
+.cover-generator-modal,
+.qr-share-modal,
+.metadata-edit-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 11, 14, 0.85);
+  backdrop-filter: blur(10px);
+  z-index: 9000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-generator-modal.open,
+.qr-share-modal.open,
+.metadata-edit-modal.open {
+  display: flex;
+}
+
+.cover-gen-box,
+.qr-share-box,
+.meta-modal-box {
+  background: #18191f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 22px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  width: min(92vw, 560px);
+}
+
+.cover-gen-body {
+  display: flex;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.cover-preview-slot {
+  width: 180px;
+  height: 270px;
+  background: #0f1013;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-preview-slot canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-gen-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.cover-template-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cover-template-item.active {
+  border-color: var(--accent-gold);
+}
+
+.template-color-preview {
+  height: 24px;
+  border-radius: 3px;
+}
+
+.template-name {
+  font-size: 0.72rem;
+  color: #ccc;
+}
+
+.qr-canvas-holder {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.qr-canvas-holder canvas {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.qr-url-pill {
+  font-size: 0.75rem;
+  color: var(--hud-subtext);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 10px;
+  border-radius: 4px;
+  text-align: center;
+  word-break: break-all;
+}
+
+.page-range-selector-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.range-inputs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--hud-subtext);
+}
+
+.page-number-input {
+  width: 55px;
+  padding: 4px 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.82rem;
+}
+
+.range-buttons-row,
+.citations-export-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.citation-btn {
+  flex: 1;
+  font-size: 0.76rem;
+  padding: 6px 8px;
+}
+
+/* 19. Ink-Saving Print Optimization */
+@media print {
+  body, html {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .app-header,
+  .app-bottom-hud,
+  .side-drawer,
+  .side-drawer-backdrop,
+  .floating-show-ui-btn,
+  .floating-tts-bar,
+  .color-temp-overlay,
+  .ultra-dim-overlay,
+  .drawing-floating-toolbar,
+  .one-hand-thumb-dock,
+  .reading-ruler-guide,
+  .floating-magnifier-glass {
+    display: none !important;
+  }
+
+  .reader-workspace {
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .book-3d-wrapper,
+  .book-page-slot,
+  .page-paper {
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}

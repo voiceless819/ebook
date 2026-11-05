@@ -1,6 +1,8 @@
 /**
  * LuminaBook - 3D Realistic Flipbook Core Engine
- * Dual-page spread, single-page mode, bug-free bi-directional 3D page flip animation.
+ * Dual-page spread, single-page mode, bi-directional 3D page flip,
+ * dynamic spine & page stack thickness, gyroscope-reactive shadows,
+ * and real-time interactive corner drag.
  */
 
 class FlipbookCore {
@@ -17,9 +19,15 @@ class FlipbookCore {
     this.pages = [];
     this.currentPage = 1;
     this.isFlipping = false;
+    this.isDraggingCorner = false;
+    this.dragStartX = 0;
+    this.dragProgress = 0;
     this.zoomLevel = 1.0;
 
     this.initDOM();
+    this.initInteractiveCornerDrag();
+    this.initGyroscopeShadows();
+
     window.addEventListener('resize', () => this.handleResize());
   }
 
@@ -31,7 +39,8 @@ class FlipbookCore {
           <div class="book-page-slot left-slot" id="leftSlot">
             <div class="page-paper" id="leftPaper"></div>
             <div class="page-gradient-crease left"></div>
-            <div class="page-outer-stack left"></div>
+            <div class="page-outer-stack left" id="leftStack"></div>
+            <div class="corner-curl-hint left" id="cornerCurlHintLeft" title="Arrastrar para retroceder página"></div>
           </div>
 
           <!-- Central Book Spine Axis -->
@@ -41,8 +50,8 @@ class FlipbookCore {
           <div class="book-page-slot right-slot" id="rightSlot">
             <div class="page-paper" id="rightPaper"></div>
             <div class="page-gradient-crease right"></div>
-            <div class="page-outer-stack right"></div>
-            <div class="corner-curl-hint" id="cornerCurlHint" title="Pasa la página"></div>
+            <div class="page-outer-stack right" id="rightStack"></div>
+            <div class="corner-curl-hint right" id="cornerCurlHintRight" title="Arrastrar para pasar página"></div>
           </div>
 
           <!-- Dynamic 3D Flipping Sheet -->
@@ -61,23 +70,217 @@ class FlipbookCore {
     this.rightSlot = this.container.querySelector('#rightSlot');
     this.leftPaper = this.container.querySelector('#leftPaper');
     this.rightPaper = this.container.querySelector('#rightPaper');
+    this.leftStack = this.container.querySelector('#leftStack');
+    this.rightStack = this.container.querySelector('#rightStack');
+    this.bookSpineLine = this.container.querySelector('#bookSpineLine');
     this.flippingSheet = this.container.querySelector('#flippingSheet');
     this.flipFront = this.container.querySelector('#flipFront');
     this.flipBack = this.container.querySelector('#flipBack');
     this.flipShadow = this.container.querySelector('#flipShadow');
-    this.cornerCurlHint = this.container.querySelector('#cornerCurlHint');
+    this.cornerCurlHintRight = this.container.querySelector('#cornerCurlHintRight');
+    this.cornerCurlHintLeft = this.container.querySelector('#cornerCurlHintLeft');
 
-    // Click on page wings to turn
-    this.rightSlot.addEventListener('click', () => {
-      if (this.isFlipping) return;
+    // Click on page wings to turn (only if not dragging corner)
+    this.rightSlot.addEventListener('click', (e) => {
+      if (this.isFlipping || this.isDraggingCorner) return;
+      if (e.target.closest('.corner-curl-hint')) return;
       if (window.getSelection && window.getSelection().toString().length > 0) return;
       this.next();
     });
 
-    this.leftSlot.addEventListener('click', () => {
-      if (this.isFlipping) return;
+    this.leftSlot.addEventListener('click', (e) => {
+      if (this.isFlipping || this.isDraggingCorner) return;
+      if (e.target.closest('.corner-curl-hint')) return;
       if (window.getSelection && window.getSelection().toString().length > 0) return;
       this.prev();
+    });
+  }
+
+  /**
+   * Real-time Interactive Corner Drag (Peel)
+   */
+  initInteractiveCornerDrag() {
+    const handleDragStart = (e, direction) => {
+      if (this.isFlipping) return;
+      e.stopPropagation();
+      e.preventDefault();
+
+      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      this.isDraggingCorner = true;
+      this.dragDirection = direction; // 'forward' | 'backward'
+      this.dragStartX = clientX;
+      this.dragProgress = 0;
+
+      const single = this.isSinglePage();
+      const fromPage = this.currentPage;
+      let toPage;
+
+      if (direction === 'forward') {
+        if (fromPage >= this.pages.length) {
+          this.isDraggingCorner = false;
+          return;
+        }
+        toPage = single ? fromPage + 1 : (fromPage === 1 ? 2 : fromPage + 2);
+        if (toPage > this.pages.length && !single) toPage = this.pages.length;
+
+        if (single) {
+          this._renderPageContent(this.rightPaper, toPage);
+          this._renderPageContent(this.flipFront, fromPage);
+          this._renderPageContent(this.flipBack, toPage);
+        } else {
+          const [, oldR] = this.getVisiblePages(fromPage);
+          const [newL, newR] = this.getVisiblePages(toPage);
+          this._renderPageContent(this.rightPaper, newR);
+          this._renderPageContent(this.flipFront, oldR);
+          this._renderPageContent(this.flipBack, newL);
+        }
+
+        this.flippingSheet.style.transition = 'none';
+        this.flippingSheet.style.transform = 'rotateY(0deg)';
+        this.flippingSheet.style.display = 'block';
+      } else {
+        if (fromPage <= 1) {
+          this.isDraggingCorner = false;
+          return;
+        }
+        toPage = single ? fromPage - 1 : (fromPage === 2 || fromPage === 3 ? 1 : fromPage - 2);
+
+        if (single) {
+          this._renderPageContent(this.rightPaper, fromPage);
+          this._renderPageContent(this.flipFront, toPage);
+          this._renderPageContent(this.flipBack, fromPage);
+        } else {
+          const [oldL] = this.getVisiblePages(fromPage);
+          const [newL, newR] = this.getVisiblePages(toPage);
+          this._renderPageContent(this.leftPaper, newL);
+          this._renderPageContent(this.flipFront, newR);
+          this._renderPageContent(this.flipBack, oldL);
+        }
+
+        this.flippingSheet.style.transition = 'none';
+        this.flippingSheet.style.transform = 'rotateY(-180deg)';
+        this.flippingSheet.style.display = 'block';
+      }
+
+      this.targetDestinationPage = toPage;
+
+      const onPointerMove = (moveEvt) => {
+        if (!this.isDraggingCorner) return;
+        const curX = moveEvt.clientX || (moveEvt.touches && moveEvt.touches[0] ? moveEvt.touches[0].clientX : curX);
+        const deltaX = curX - this.dragStartX;
+        const slotWidth = this.rightSlot.offsetWidth || 300;
+
+        if (this.dragDirection === 'forward') {
+          // Dragging to the left (negative deltaX)
+          const pct = Math.max(0, Math.min(1, -deltaX / (slotWidth * 0.85)));
+          this.dragProgress = pct;
+          const deg = -180 * pct;
+          this.flippingSheet.style.transform = `rotateY(${deg}deg)`;
+          this.flipShadow.style.opacity = (pct * 0.5).toFixed(2);
+        } else {
+          // Dragging to the right (positive deltaX)
+          const pct = Math.max(0, Math.min(1, deltaX / (slotWidth * 0.85)));
+          this.dragProgress = pct;
+          const deg = -180 + (180 * pct);
+          this.flippingSheet.style.transform = `rotateY(${deg}deg)`;
+          this.flipShadow.style.opacity = (pct * 0.5).toFixed(2);
+        }
+      };
+
+      const onPointerUp = () => {
+        if (!this.isDraggingCorner) return;
+        this.isDraggingCorner = false;
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('touchmove', onPointerMove);
+        window.removeEventListener('touchend', onPointerUp);
+
+        const shouldComplete = this.dragProgress >= 0.28;
+        this.flippingSheet.style.transition = 'transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+
+        if (this.dragDirection === 'forward') {
+          if (shouldComplete) {
+            this.flippingSheet.style.transform = 'rotateY(-180deg)';
+            this.flipShadow.style.opacity = '0.45';
+            if (window.bookAudio && this.options.soundEnabled) window.bookAudio.playPageTurn(false);
+            setTimeout(() => {
+              this.currentPage = this.targetDestinationPage;
+              this.renderCurrentView();
+              this.flippingSheet.style.display = 'none';
+              this.flippingSheet.style.transform = '';
+            }, 320);
+          } else {
+            // Revert back
+            this.flippingSheet.style.transform = 'rotateY(0deg)';
+            this.flipShadow.style.opacity = '0';
+            setTimeout(() => {
+              this.renderCurrentView();
+              this.flippingSheet.style.display = 'none';
+              this.flippingSheet.style.transform = '';
+            }, 320);
+          }
+        } else {
+          if (shouldComplete) {
+            this.flippingSheet.style.transform = 'rotateY(0deg)';
+            this.flipShadow.style.opacity = '0';
+            if (window.bookAudio && this.options.soundEnabled) window.bookAudio.playPageTurn(true);
+            setTimeout(() => {
+              this.currentPage = this.targetDestinationPage;
+              this.renderCurrentView();
+              this.flippingSheet.style.display = 'none';
+              this.flippingSheet.style.transform = '';
+            }, 320);
+          } else {
+            // Revert back to -180deg
+            this.flippingSheet.style.transform = 'rotateY(-180deg)';
+            setTimeout(() => {
+              this.renderCurrentView();
+              this.flippingSheet.style.display = 'none';
+              this.flippingSheet.style.transform = '';
+            }, 320);
+          }
+        }
+      };
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('touchmove', onPointerMove, { passive: true });
+      window.addEventListener('touchend', onPointerUp);
+    };
+
+    if (this.cornerCurlHintRight) {
+      this.cornerCurlHintRight.addEventListener('pointerdown', (e) => handleDragStart(e, 'forward'));
+    }
+    if (this.cornerCurlHintLeft) {
+      this.cornerCurlHintLeft.addEventListener('pointerdown', (e) => handleDragStart(e, 'backward'));
+    }
+  }
+
+  /**
+   * Gyroscope & Dynamic Light Tilt Shadows
+   */
+  initGyroscopeShadows() {
+    // Gyroscope on mobile
+    if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission !== 'function') {
+      window.addEventListener('deviceorientation', (e) => {
+        if (e.gamma !== null && e.beta !== null) {
+          const shadowX = Math.max(-25, Math.min(25, e.gamma * 0.8));
+          const shadowY = Math.max(5, Math.min(35, (e.beta - 45) * 0.5));
+          this.wrapper.style.setProperty('--gyro-shadow-x', `${shadowX}px`);
+          this.wrapper.style.setProperty('--gyro-shadow-y', `${shadowY}px`);
+        }
+      }, { passive: true });
+    }
+
+    // Interactive mouse light tracking on desktop
+    this.stage.addEventListener('mousemove', (e) => {
+      const rect = this.stage.getBoundingClientRect();
+      const relativeX = (e.clientX - rect.left) / rect.width - 0.5;
+      const relativeY = (e.clientY - rect.top) / rect.height - 0.5;
+      const shadowX = Math.round(relativeX * 30);
+      const shadowY = Math.round(20 + relativeY * 15);
+      this.wrapper.style.setProperty('--gyro-shadow-x', `${shadowX}px`);
+      this.wrapper.style.setProperty('--gyro-shadow-y', `${shadowY}px`);
     });
   }
 
@@ -88,7 +291,7 @@ class FlipbookCore {
   }
 
   setSpread(mode) {
-    this.options.spread = mode; // 'single' or 'double'
+    this.options.spread = mode;
     this.updateLayout();
     this.renderCurrentView();
   }
@@ -105,8 +308,35 @@ class FlipbookCore {
     this.renderCurrentView();
   }
 
+  /**
+   * Dynamic Spine & Paper Stack Thickness calculation
+   */
   updateLayout() {
     const single = this.isSinglePage();
+    const total = Math.max(1, this.pages.length);
+
+    // Calculate realistic physical thickness based on total pages
+    // 20 pages = ~3px, 100 pages = ~8px, 400 pages = ~18px
+    const maxThickness = Math.min(22, Math.max(3, Math.round(Math.log2(total) * 2.4)));
+
+    // Proportionate distribution between left stack and right stack
+    const progressRatio = total > 1 ? (this.currentPage - 1) / (total - 1) : 0;
+    const leftPx = Math.max(1, Math.round(progressRatio * maxThickness));
+    const rightPx = Math.max(1, Math.round((1 - progressRatio) * maxThickness));
+
+    if (this.leftStack) {
+      this.leftStack.style.width = `${leftPx}px`;
+      this.leftStack.style.boxShadow = `-${leftPx}px 0 0 0 rgba(0,0,0,0.18), inset 1px 0 0 rgba(255,255,255,0.08)`;
+    }
+    if (this.rightStack) {
+      this.rightStack.style.width = `${rightPx}px`;
+      this.rightStack.style.boxShadow = `${rightPx}px 0 0 0 rgba(0,0,0,0.18), inset -1px 0 0 rgba(255,255,255,0.08)`;
+    }
+
+    if (this.bookSpineLine) {
+      this.bookSpineLine.style.width = `${Math.max(4, Math.min(16, Math.round(maxThickness * 0.7)))}px`;
+    }
+
     if (single) {
       this.wrapper.classList.add('single-mode');
       this.leftSlot.style.display = 'none';
@@ -147,6 +377,14 @@ class FlipbookCore {
       this._renderPageContent(this.rightPaper, rightNum);
     }
 
+    // Refresh stack thicknesses after page changes
+    this.updateLayout();
+
+    // Trigger drawing layer refresh if drawing controller is active
+    if (window.drawingController && window.luminaApp && window.luminaApp.currentBookId) {
+      window.drawingController.attachToSlot(this.rightSlot, this.currentPage);
+    }
+
     if (this.options.onPageChange) {
       this.options.onPageChange(this.currentPage, this.pages.length);
     }
@@ -163,6 +401,7 @@ class FlipbookCore {
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'page-content-wrapper';
+    contentDiv.dataset.page = pageNum;
 
     if (pageData.canvas) {
       const clonedCanvas = document.createElement('canvas');
@@ -179,7 +418,7 @@ class FlipbookCore {
       img.alt = `Página ${pageNum}`;
       contentDiv.appendChild(img);
     } else if (window.pdfEngine && window.pdfEngine.isLoaded && pageNum <= window.pdfEngine.numPages) {
-      // On-demand lazy PDF rendering
+      // Lazy on-demand rendering
       const canvasContainer = document.createElement('div');
       canvasContainer.className = 'rendered-page-container';
       canvasContainer.style.width = '100%';
@@ -204,7 +443,7 @@ class FlipbookCore {
         console.warn(`Error al renderizar página ${pageNum}:`, err);
       });
 
-      // Preload adjacent page in background
+      // Background prefetch next page
       if (pageNum < window.pdfEngine.numPages) {
         setTimeout(() => window.pdfEngine.renderPage(pageNum + 1).catch(() => {}), 150);
       }
@@ -230,6 +469,30 @@ class FlipbookCore {
         });
       }
       contentDiv.appendChild(textArticle);
+    }
+
+    // Sticky note coordinate pins overlay
+    if (window.bookAnnotations) {
+      const notesForPage = window.bookAnnotations.getNotesForPage(pageNum);
+      if (notesForPage && notesForPage.length > 0) {
+        notesForPage.forEach(n => {
+          const pin = document.createElement('div');
+          pin.className = 'page-sticky-pin';
+          pin.style.left = `${n.x || 50}%`;
+          pin.style.top = `${n.y || 50}%`;
+          pin.title = `Nota: ${n.content}`;
+          pin.innerHTML = `
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+              <path d="M16 12V4H17V2H7V4H8V12L6 14V16H11V22L12 23L13 22V16H18V14L16 12Z"/>
+            </svg>
+          `;
+          pin.addEventListener('click', (e) => {
+            e.stopPropagation();
+            alert(`Nota en página ${pageNum}:\n\n"${n.content}"\n(${n.date})`);
+          });
+          contentDiv.appendChild(pin);
+        });
+      }
     }
 
     const footerStamp = document.createElement('div');
@@ -297,9 +560,6 @@ class FlipbookCore {
     this._animateFlip(this.currentPage, target, isReverse);
   }
 
-  /**
-   * 3D Page Flip Animation (Glitch-free, Bi-directional)
-   */
   _animateFlip(fromPage, toPage, isReverse) {
     this.isFlipping = true;
     if (this.options.onFlipStart) this.options.onFlipStart(toPage);
@@ -307,26 +567,22 @@ class FlipbookCore {
     if (window.bookAudio && this.options.soundEnabled) {
       window.bookAudio.playPageTurn(isReverse);
     }
+    if (window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(15);
+    }
 
     const single = this.isSinglePage();
 
     if (!isReverse) {
-      // --- FORWARD FLIP (Right to Left) ---
+      // Forward Flip
       if (single) {
-        // Underlying slot immediately displays destination page (eliminates old-page flash)
         this._renderPageContent(this.rightPaper, toPage);
-
-        // Flipper sheet has old page on front, new page on back
         this._renderPageContent(this.flipFront, fromPage);
         this._renderPageContent(this.flipBack, toPage);
       } else {
-        const [oldL, oldR] = this.getVisiblePages(fromPage);
+        const [, oldR] = this.getVisiblePages(fromPage);
         const [newL, newR] = this.getVisiblePages(toPage);
-
-        // The right slot immediately displays newR underneath
         this._renderPageContent(this.rightPaper, newR);
-
-        // Flipper sheet lifts oldR on front, lands newL on back
         this._renderPageContent(this.flipFront, oldR);
         this._renderPageContent(this.flipBack, newL);
       }
@@ -334,7 +590,7 @@ class FlipbookCore {
       this.flippingSheet.style.transition = 'none';
       this.flippingSheet.style.transform = 'rotateY(0deg)';
       this.flippingSheet.style.display = 'block';
-      void this.flippingSheet.offsetWidth; // Force synchronous layout reflow
+      void this.flippingSheet.offsetWidth;
 
       this.flippingSheet.style.transition = 'transform 0.44s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       requestAnimationFrame(() => {
@@ -342,22 +598,15 @@ class FlipbookCore {
         this.flipShadow.style.opacity = '0.45';
       });
     } else {
-      // --- BACKWARD FLIP (Left to Right in Reverse) ---
+      // Backward Flip
       if (single) {
-        // Underlying slot keeps current page while previous page swings over from left
         this._renderPageContent(this.rightPaper, fromPage);
-
         this._renderPageContent(this.flipFront, toPage);
         this._renderPageContent(this.flipBack, fromPage);
       } else {
-        const [oldL, oldR] = this.getVisiblePages(fromPage);
+        const [oldL] = this.getVisiblePages(fromPage);
         const [newL, newR] = this.getVisiblePages(toPage);
-
-        // The left slot immediately displays newL underneath as oldL lifts
         this._renderPageContent(this.leftPaper, newL);
-
-        // Flipper sheet starts on the left (-180deg). Its back face is facing reader with oldL.
-        // When it rotates to 0deg on the right, its front face faces reader with newR!
         this._renderPageContent(this.flipFront, newR);
         this._renderPageContent(this.flipBack, oldL);
       }
@@ -365,7 +614,7 @@ class FlipbookCore {
       this.flippingSheet.style.transition = 'none';
       this.flippingSheet.style.transform = 'rotateY(-180deg)';
       this.flippingSheet.style.display = 'block';
-      void this.flippingSheet.offsetWidth; // Force synchronous layout reflow
+      void this.flippingSheet.offsetWidth;
 
       this.flippingSheet.style.transition = 'transform 0.44s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
       requestAnimationFrame(() => {
@@ -374,7 +623,7 @@ class FlipbookCore {
       });
     }
 
-    const duration = 440; // ms matching CSS transition
+    const duration = 440;
 
     setTimeout(() => {
       this.currentPage = toPage;

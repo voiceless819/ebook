@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover">
-  <meta name="description" content="Visor de PDF y conversor a eBook con almacenamiento local y catálogo personal.">
+  <meta name="description" content="LuminaBook — Visor de PDF, Conversor a eBook 3D, Catálogo Personal y Suite de Estudio.">
   <meta name="theme-color" content="#121316">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>LuminaBook — Visor de PDF y Catálogo Personal</title>
+  <title>LuminaBook — Visor de PDF, Catálogo Personal y Estudio</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -16,8 +16,8 @@
 
     <!-- TOP HEADER -->
     <header class="app-header" id="appHeader">
-      <!-- Left: Logo & Title -->
-      <div class="brand-section" id="btnLogoHome" title="Inicio">
+      <!-- Left: Logo & Active Document -->
+      <div class="brand-section" id="btnLogoHome" title="Inicio / Portada">
         <div class="brand-logo-icon">
           <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
@@ -30,9 +30,9 @@
         </div>
       </div>
 
-      <!-- Center: Library Button & View Modes -->
+      <!-- Center: Catalog, 3 Reading Modes (3D Book, Reflow Text, Vertical Scroll) & Spread -->
       <div class="header-center-tools">
-        <button class="action-btn" id="btnOpenCatalog" title="Abrir Catálogo de Documentos Guardados">
+        <button class="action-btn" id="btnOpenCatalog" title="Abrir Catálogo Personal">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path d="m16 6 4 14"></path>
             <path d="M12 6v14"></path>
@@ -44,20 +44,28 @@
         </button>
 
         <div class="mode-toggle-group">
-          <button class="mode-btn active" id="btnMode3D" title="Vista Libro (Páginas Enfrentadas)">
+          <button class="mode-btn active" id="btnMode3D" title="Vista Libro (Páginas Enfrentadas 3D)">
             <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
               <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
             </svg>
             <span>Libro</span>
           </button>
-          <button class="mode-btn" id="btnModeReflow" title="Vista Lectura Continua">
+          <button class="mode-btn" id="btnModeReflow" title="Vista Lectura Líquida (Texto Continuo)">
             <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <line x1="21" y1="6" x2="3" y2="6"></line>
               <line x1="15" y1="12" x2="3" y2="12"></line>
               <line x1="17" y1="18" x2="3" y2="18"></line>
             </svg>
             <span>Texto</span>
+          </button>
+          <button class="mode-btn" id="btnModeScroll" title="Modo Scroll Continuo Vertical">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="6" y="3" width="12" height="18" rx="2"></rect>
+              <line x1="12" y1="7" x2="12" y2="13"></line>
+              <polyline points="9 10 12 7 15 10"></polyline>
+            </svg>
+            <span>Scroll</span>
           </button>
         </div>
 
@@ -80,7 +88,7 @@
         </div>
       </div>
 
-      <!-- Right: Main Action & Secondary Tools -->
+      <!-- Right: Main Actions, Visual Navigation & Drawers -->
       <div class="header-actions">
         <button class="action-btn primary-action" id="btnOpenFile" title="Añadir PDF a la biblioteca">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -90,7 +98,29 @@
           <span>Añadir PDF</span>
         </button>
 
-        <button class="action-btn icon-only" id="btnHideUI" title="Ocultar interfaz (Modo Inmersivo) [H]">
+        <button class="action-btn icon-only" id="btnGridOverview" title="Vista de Pájaro (Cuadrícula de páginas) [G]">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+
+        <button class="action-btn icon-only" id="btnToggleThumbnailsSidebar" title="Tira lateral de miniaturas">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <line x1="9" y1="3" x2="9" y2="21"></line>
+          </svg>
+        </button>
+
+        <button class="action-btn icon-only" id="btnSoloMode" title="Modo Solo Libro (Sin interfaz) [Z]">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+          </svg>
+        </button>
+
+        <button class="action-btn icon-only" id="btnHideUI" title="Ocultar interfaz [H]">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
             <line x1="1" y1="1" x2="23" y2="23"></line>
@@ -115,13 +145,13 @@
           </svg>
         </button>
 
-        <button class="action-btn icon-only" id="btnToggleNotes" title="Marcadores y notas">
+        <button class="action-btn icon-only" id="btnToggleNotes" title="Marcadores, citas y notas">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
           </svg>
         </button>
 
-        <button class="action-btn icon-only" id="btnToggleSettings" title="Ajustes de visualización">
+        <button class="action-btn icon-only" id="btnToggleSettings" title="Filtros y ajustes visuales">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <line x1="4" y1="21" x2="4" y2="14"></line>
             <line x1="4" y1="10" x2="4" y2="3"></line>
@@ -135,7 +165,7 @@
           </svg>
         </button>
 
-        <button class="action-btn icon-only" id="btnToggleExport" title="Exportar">
+        <button class="action-btn icon-only" id="btnToggleExport" title="Exportar y transformar">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
@@ -154,9 +184,13 @@
       </div>
     </header>
 
+    <!-- AMBIENT & VISUAL OVERLAYS -->
+    <div class="color-temp-overlay" id="colorTempOverlay"></div>
+    <div class="ultra-dim-overlay" id="ultraDimOverlay"></div>
+
     <!-- MAIN READING VIEWPORT -->
     <main class="reader-workspace" id="readerWorkspace">
-      <!-- Floating Unhide UI Button (Visible when menu is hidden) -->
+      <!-- Floating Unhide UI Button -->
       <button class="floating-show-ui-btn" id="floatingShowUIBtn" title="Mostrar menú [H]">
         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -165,14 +199,30 @@
         <span>Mostrar Menú</span>
       </button>
 
-      <!-- 3D Flipbook Panel -->
+      <!-- Floating Exit Solo Mode Button -->
+      <button class="floating-exit-solo-btn" id="btnExitSoloMode" title="Salir de Modo Solo Libro [Esc/Z]" style="display:none;">
+        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+          <polyline points="4 14 10 14 10 20"></polyline>
+          <polyline points="20 10 14 10 14 4"></polyline>
+          <line x1="14" y1="10" x2="21" y2="3"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+        <span>Salir de Solo Libro</span>
+      </button>
+
+      <!-- 1. 3D Flipbook Panel -->
       <div class="reading-view-panel active-panel" id="panelFlipbook">
         <div id="flipbookContainer" style="width:100%; height:100%;"></div>
       </div>
 
-      <!-- Reflow Panel -->
+      <!-- 2. Reflow Text Panel -->
       <div class="reading-view-panel" id="panelReflow">
         <div id="reflowContainer" style="width:100%; height:100%;"></div>
+      </div>
+
+      <!-- 3. Vertical Continuous Scroll Panel -->
+      <div class="reading-view-panel" id="panelScroll">
+        <div id="scrollContainer" class="vertical-scroll-container"></div>
       </div>
 
       <!-- Floating TTS Audio Bar -->
@@ -202,7 +252,7 @@
       </div>
     </main>
 
-    <!-- BOTTOM TOOLBAR -->
+    <!-- BOTTOM TOOLBAR HUD -->
     <footer class="app-bottom-hud" id="appBottomHud">
       <div class="hud-group-left">
         <button class="action-btn icon-only" id="btnPrevPage" title="Página anterior">
@@ -219,6 +269,56 @@
       </div>
 
       <div class="hud-group-right">
+        <!-- Reading Tools Dropdown Trigger -->
+        <div class="reading-tools-trigger-wrapper">
+          <button class="action-btn icon-only" id="btnReadingToolsMenu" title="Herramientas de estudio y lectura">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+
+          <!-- Reading Tools Popup Menu -->
+          <div class="reading-tools-popup-menu" id="readingToolsPopupMenu">
+            <button class="tool-menu-item" id="btnToolRuler">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><line x1="2" y1="12" x2="22" y2="12"></line><line x1="6" y1="8" x2="6" y2="12"></line><line x1="12" y1="8" x2="12" y2="12"></line><line x1="18" y1="8" x2="18" y2="12"></line></svg>
+              <span>Regla de Lectura</span>
+            </button>
+            <button class="tool-menu-item" id="btnToolMagnifier">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <span>Lupa de Aumento</span>
+            </button>
+            <button class="tool-menu-item" id="btnToolDraw">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path></svg>
+              <span>Dibujo con Stylus</span>
+            </button>
+            <button class="tool-menu-item" id="btnToolCompare">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="3" width="20" height="18" rx="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>
+              <span>Comparar 2 Páginas</span>
+            </button>
+            <button class="tool-menu-item" id="btnToolFlashcards">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+              <span>Modo Examen (Tarjetas)</span>
+            </button>
+            <button class="tool-menu-item" id="btnSlideshowToggle">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Presentación Automática</span>
+            </button>
+            <button class="tool-menu-item" id="btnToolQRShare">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><circle cx="17.5" cy="17.5" r="3.5"></circle></svg>
+              <span>Transferir con QR</span>
+            </button>
+            <button class="tool-menu-item" id="btnToolOneHand">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+              <span>Modo a Una Mano</span>
+            </button>
+            <button class="tool-menu-item" id="btnToolOrientation">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="2" width="16" height="20" rx="2"></rect><path d="M9 22v-4h6v4"></path></svg>
+              <span>Bloquear Orientación</span>
+            </button>
+          </div>
+        </div>
+
         <button class="action-btn icon-only" id="btnBookmarkToggle" title="Añadir a marcadores">
           <span id="bookmarkStarIcon">
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -263,7 +363,13 @@
         </button>
       </div>
       <div class="drawer-body">
-        <div class="catalog-add-banner">
+        <!-- Catalog Navigation Tabs: Books vs Trash -->
+        <div class="catalog-tab-bar">
+          <button class="catalog-tab-btn active" id="tabCatalogBooks">Mi Biblioteca</button>
+          <button class="catalog-tab-btn" id="tabCatalogTrash">Papelera (7 días)</button>
+        </div>
+
+        <div class="catalog-add-banner" id="catalogAddBanner">
           <p>Tus documentos se guardan de forma privada y permanente en la memoria de este navegador.</p>
           <button class="action-btn primary-action" id="btnCatalogUpload" style="width:100%; justify-content:center; margin-top:8px;">
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -274,12 +380,60 @@
           </button>
         </div>
 
-        <div style="margin: 16px 0 10px;">
-          <input type="search" id="catalogSearchInput" placeholder="Filtrar por título..." style="width:100%; padding: 8px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color:#fff; font-size: 0.85rem; outline: none;">
+        <!-- Catalog Toolbar: Search, Collections & Sorting -->
+        <div class="catalog-filter-bar">
+          <input type="search" id="catalogSearchInput" placeholder="Buscar en biblioteca y textos..." class="search-input-field">
+          
+          <div class="catalog-view-sort-row">
+            <div class="catalog-sort-wrapper">
+              <label>Ordenar:</label>
+              <select id="catalogSortSelect" class="compact-select">
+                <option value="recent">Última lectura</option>
+                <option value="title">Título (A-Z)</option>
+                <option value="progress">Progreso (%)</option>
+                <option value="size">Tamaño de archivo</option>
+                <option value="pages">Número de páginas</option>
+              </select>
+            </div>
+
+            <!-- Grid vs List View Toggle -->
+            <div class="catalog-view-toggle">
+              <button class="view-toggle-btn active" id="btnCatalogViewGrid" title="Vista cuadrícula de portadas">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              </button>
+              <button class="view-toggle-btn" id="btnCatalogViewList" title="Vista lista compacta / tabla">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Tags & Collections Chips -->
+          <div class="catalog-tags-chip-row" id="catalogTagsChipRow">
+            <span class="catalog-tag-chip active" data-tag="all">Todos</span>
+            <span class="catalog-tag-chip" data-tag="Estudio">Estudio</span>
+            <span class="catalog-tag-chip" data-tag="Trabajo">Trabajo</span>
+            <span class="catalog-tag-chip" data-tag="Lectura rápida">Lectura rápida</span>
+          </div>
+        </div>
+
+        <!-- Global Reading Stats Card -->
+        <div class="reading-stats-summary-card" id="catalogStatsCard">
+          <div class="stat-metric-col">
+            <span class="stat-number" id="statsTotalMinutes">0m</span>
+            <span class="stat-label">Tiempo leído</span>
+          </div>
+          <div class="stat-metric-col">
+            <span class="stat-number" id="statsBooksCount">0</span>
+            <span class="stat-label">Documentos</span>
+          </div>
+          <div class="stat-metric-col">
+            <span class="stat-number" id="statsCompletedCount">0</span>
+            <span class="stat-label">Terminados</span>
+          </div>
         </div>
 
         <div id="catalogListContainer" class="catalog-cards-container">
-          <!-- Dynamic cards from IndexedDB -->
+          <!-- Dynamic cards or table from IndexedDB -->
         </div>
       </div>
     </aside>
@@ -313,17 +467,17 @@
       </div>
       <div class="drawer-body">
         <div style="margin-bottom: 14px;">
-          <input type="search" id="searchInput" placeholder="Escribe un término..." style="width:100%; padding: 9px 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color:#fff; font-size: 0.88rem; outline: none;">
+          <input type="search" id="searchInput" placeholder="Escribe un término..." class="search-input-field">
         </div>
         <div id="searchResultsCount" style="font-size: 0.78rem; color: var(--hud-subtext); margin-bottom: 10px;"></div>
         <div id="searchResultsContainer"></div>
       </div>
     </aside>
 
-    <!-- DRAWER: NOTES & BOOKMARKS -->
+    <!-- DRAWER: NOTES, HIGHLIGHTS & CITATIONS -->
     <aside class="side-drawer" id="drawerNotes">
       <div class="drawer-header">
-        <h3>Marcadores y Notas</h3>
+        <h3>Marcadores, Citas y Notas</h3>
         <button class="drawer-close-btn" data-close-drawer>
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -332,22 +486,32 @@
         </button>
       </div>
       <div class="drawer-body">
-        <div class="settings-section-title">Marcadores</div>
+        <!-- Pastel Color Palette for Highlighting -->
+        <div class="settings-section-title">Color de Subrayador Activo</div>
+        <div class="highlighter-color-picker" id="hlColorPicker">
+          <button class="hl-swatch-btn active" data-color="yellow" style="background:#ffeaa7;" title="Amarillo Pastel"></button>
+          <button class="hl-swatch-btn" data-color="mint" style="background:#55efc4;" title="Menta Pastel"></button>
+          <button class="hl-swatch-btn" data-color="lavender" style="background:#a29bfe;" title="Lavanda Pastel"></button>
+          <button class="hl-swatch-btn" data-color="cyan" style="background:#81ecec;" title="Cian Pastel"></button>
+          <button class="hl-swatch-btn" data-color="pink" style="background:#fab1a0;" title="Rosa Pastel"></button>
+        </div>
+
+        <div class="settings-section-title" style="margin-top:16px;">Marcadores de Lectura</div>
         <div id="bookmarksListContainer" style="margin-bottom: 20px;"></div>
 
         <div class="settings-section-title">Nueva Nota en Página Actual</div>
-        <textarea id="noteInput" placeholder="Añade un comentario..." rows="3" style="width:100%; padding:8px 10px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:6px; color:#fff; font-size:0.85rem; margin-bottom:8px; resize:none;"></textarea>
+        <textarea id="noteInput" placeholder="Añade un comentario o apunte personal..." rows="3" class="note-textarea-field"></textarea>
         <button class="action-btn primary-action" id="btnSaveNote" style="width: 100%; justify-content: center;">Guardar Nota</button>
 
-        <div class="settings-section-title" style="margin-top:20px;">Notas del Documento</div>
+        <div class="settings-section-title" style="margin-top:20px;">Notas y Chinchetas</div>
         <div id="notesListContainer"></div>
       </div>
     </aside>
 
-    <!-- DRAWER: DISPLAY SETTINGS -->
+    <!-- DRAWER: DISPLAY SETTINGS & VISUAL FILTERS -->
     <aside class="side-drawer" id="drawerSettings">
       <div class="drawer-header">
-        <h3>Ajustes de Visualización</h3>
+        <h3>Filtros y Ajustes Visuales</h3>
         <button class="drawer-close-btn" data-close-drawer>
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -366,15 +530,43 @@
           <button class="theme-pill-btn eink" data-theme="eink">E-Ink</button>
         </div>
 
-        <div class="settings-section-title">Tipografía (Modo Texto)</div>
+        <!-- Blue Light & Night Filters -->
+        <div class="settings-section-title">Filtros Nocturnos y de Confort</div>
+        <div class="range-control-row">
+          <label>Filtro luz azul (Ámbar cálido)</label>
+          <input type="range" id="colorTempSlider" min="0" max="60" value="0">
+        </div>
+
+        <div class="range-control-row">
+          <label>Atenuación bajo mínimo</label>
+          <input type="range" id="ultraDimSlider" min="0" max="80" value="0">
+        </div>
+
+        <div class="range-control-row">
+          <label for="highContrastScanToggle">Modo alto contraste (escaneos)</label>
+          <input type="checkbox" id="highContrastScanToggle" class="custom-checkbox">
+        </div>
+
+        <div class="range-control-row">
+          <label for="smartInvertDarkToggle">Inversión inteligente (preserva fotos)</label>
+          <input type="checkbox" id="smartInvertDarkToggle" class="custom-checkbox">
+        </div>
+
+        <!-- Typography & Margins -->
+        <div class="settings-section-title">Tipografía y Caja de Texto</div>
         <div class="range-control-row">
           <label>Fuente</label>
-          <select id="fontFamilySelect" style="background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:4px 8px;">
+          <select id="fontFamilySelect" class="compact-select">
             <option value="sans" selected>Sans-Serif</option>
             <option value="serif">Serif Clásica</option>
             <option value="dyslexic">OpenDyslexic</option>
             <option value="mono">Monospace</option>
           </select>
+        </div>
+
+        <div class="range-control-row" style="margin-top:4px;">
+          <label>Cargar fuente local (.ttf / .woff2)</label>
+          <input type="file" id="localFontFileInput" accept=".ttf,.woff,.woff2" style="font-size:0.75rem; width:130px; color:#aaa;">
         </div>
 
         <div class="range-control-row">
@@ -387,21 +579,31 @@
           <input type="range" id="lineHeightSlider" min="1.4" max="2.4" step="0.1" value="1.7">
         </div>
 
-        <div class="settings-section-title">Lectura Rápida</div>
         <div class="range-control-row">
-          <label for="bionicToggle">Lectura Biónica (fijación)</label>
-          <input type="checkbox" id="bionicToggle" style="accent-color: var(--accent-gold); width:16px; height:16px; cursor:pointer;">
+          <label>Márgenes laterales continuo</label>
+          <input type="range" id="marginLateralSlider" min="15" max="140" value="30">
         </div>
 
-        <div class="settings-section-title">Sonido y Ambiente</div>
+        <div class="range-control-row">
+          <label for="hyphenationToggle">Separación silábica automática</label>
+          <input type="checkbox" id="hyphenationToggle" checked class="custom-checkbox">
+        </div>
+
+        <div class="range-control-row">
+          <label for="bionicToggle">Lectura Biónica (fijación)</label>
+          <input type="checkbox" id="bionicToggle" class="custom-checkbox">
+        </div>
+
+        <!-- Acoustic & Ambience -->
+        <div class="settings-section-title">Sonido y Entorno</div>
         <div class="range-control-row">
           <label>Pase de página acústico</label>
-          <input type="checkbox" id="soundEffectsToggle" checked style="accent-color: var(--accent-gold); width:16px; height:16px; cursor:pointer;">
+          <input type="checkbox" id="soundEffectsToggle" checked class="custom-checkbox">
         </div>
 
         <div class="range-control-row">
           <label>Sonido ambiente</label>
-          <select id="ambientSoundSelect" style="background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15); border-radius:6px; padding:4px 8px;">
+          <select id="ambientSoundSelect" class="compact-select">
             <option value="none" selected>Desactivado</option>
             <option value="rain">Lluvia</option>
             <option value="library">Biblioteca</option>
@@ -411,10 +613,10 @@
       </div>
     </aside>
 
-    <!-- DRAWER: EXPORT -->
+    <!-- DRAWER: EXPORT & TRANSFORMATION -->
     <aside class="side-drawer" id="drawerExport">
       <div class="drawer-header">
-        <h3>Exportar Documento</h3>
+        <h3>Exportar y Transformar</h3>
         <button class="drawer-close-btn" data-close-drawer>
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -423,10 +625,42 @@
         </button>
       </div>
       <div class="drawer-body">
-        <p style="font-size:0.82rem; color:var(--hud-subtext); margin-bottom:14px;">
-          Descarga el documento actual convertido al formato deseado:
-        </p>
+        <!-- Page Range Extract Section -->
+        <div class="settings-section-title">Exportar Rango de Páginas</div>
+        <div class="page-range-selector-box">
+          <div class="range-inputs-row">
+            <label>Desde pág:</label>
+            <input type="number" id="exportRangeStart" min="1" value="1" class="page-number-input">
+            <label>Hasta:</label>
+            <input type="number" id="exportRangeEnd" min="1" value="1" class="page-number-input">
+          </div>
+          <div class="range-buttons-row">
+            <button class="action-btn" id="btnExportRangeMd">Extraer Markdown</button>
+            <button class="action-btn" id="btnExportRangeEpub">Extraer EPUB</button>
+          </div>
+        </div>
 
+        <!-- Structured Academic Citations -->
+        <div class="settings-section-title" style="margin-top:16px;">Exportar Citas Académicas</div>
+        <div class="citations-export-group">
+          <button class="action-btn citation-btn" id="btnExportCitationsAPA">Formato APA 7ª</button>
+          <button class="action-btn citation-btn" id="btnExportCitationsMLA">Formato MLA 9ª</button>
+          <button class="action-btn citation-btn" id="btnExportCitationsChicago">Formato Chicago</button>
+        </div>
+
+        <div class="settings-section-title" style="margin-top:18px;">Herramientas Editoriales</div>
+        <div class="editorial-tools-group">
+          <button class="action-btn primary-action" id="btnOpenCoverGen" style="width:100%; justify-content:center; margin-bottom:8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <span>Generar Portada Sobria para EPUB</span>
+          </button>
+          <button class="action-btn" id="btnPrintInkSaving" style="width:100%; justify-content:center;">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+            <span>Imprimir Ahorrando Tinta (Ctrl + P)</span>
+          </button>
+        </div>
+
+        <div class="settings-section-title" style="margin-top:20px;">Formatos Completos</div>
         <div class="export-card-list">
           <div class="export-item-card" id="btnExportEpub" role="button" tabindex="0">
             <div class="export-card-info">
@@ -438,8 +672,8 @@
 
           <div class="export-item-card" id="btnExportHtml" role="button" tabindex="0">
             <div class="export-card-info">
-              <h4>Flipbook HTML</h4>
-              <p>Archivo autónomo con visor integrado para abrir sin conexión</p>
+              <h4>Flipbook HTML Autónomo</h4>
+              <p>Archivo autosuficiente con visor integrado para abrir sin conexión</p>
             </div>
             <button class="action-btn">Descargar</button>
           </div>
@@ -455,7 +689,7 @@
           <div class="export-item-card" id="btnExportNotes" role="button" tabindex="0">
             <div class="export-card-info">
               <h4>Informe de Anotaciones (.md)</h4>
-              <p>Marcadores, notas y resumen de lectura</p>
+              <p>Marcadores, notas y citas académicas formateadas</p>
             </div>
             <button class="action-btn">Descargar</button>
           </div>
@@ -470,6 +704,40 @@
         </div>
       </div>
     </aside>
+
+    <!-- METADATA EDITOR MODAL -->
+    <div class="metadata-edit-modal" id="metadataEditModal">
+      <div class="meta-modal-box">
+        <div class="meta-modal-header">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            <h3>Editar Metadatos del Documento</h3>
+          </div>
+          <button class="action-btn icon-only" id="btnCloseMetaModal">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="meta-modal-body">
+          <input type="hidden" id="editMetaBookId">
+          <div class="input-field-group">
+            <label>Título:</label>
+            <input type="text" id="editMetaTitleInput" class="search-input-field">
+          </div>
+          <div class="input-field-group" style="margin-top:10px;">
+            <label>Autor / Institución:</label>
+            <input type="text" id="editMetaAuthorInput" class="search-input-field">
+          </div>
+          <div class="input-field-group" style="margin-top:10px;">
+            <label>Etiquetas (separadas por comas, ej: Estudio, Trabajo):</label>
+            <input type="text" id="editMetaTagsInput" class="search-input-field" placeholder="Estudio, Trabajo, etc.">
+          </div>
+          <div style="margin-top:18px; display:flex; justify-content:flex-end; gap:8px;">
+            <button class="action-btn" id="btnCancelEditMeta">Cancelar</button>
+            <button class="action-btn primary-action" id="btnSaveEditMeta">Guardar Cambios</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- HIDDEN FILE INPUT -->
     <input type="file" id="filePicker" accept=".pdf,.epub,.txt,.md" style="display: none;">
@@ -509,6 +777,10 @@
   <script src="js/reflow-reader.js"></script>
   <script src="js/gestures.js"></script>
   <script src="js/annotations.js"></script>
+  <script src="js/drawing.js"></script>
+  <script src="js/study-tools.js"></script>
+  <script src="js/cover-generator.js"></script>
+  <script src="js/quick-share.js"></script>
   <script src="js/demo-book.js"></script>
   <script src="js/app.js"></script>
 </body>

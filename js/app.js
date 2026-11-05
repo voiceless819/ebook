@@ -1,6 +1,7 @@
 /**
  * LuminaBook - Application Orchestrator
- * Integrates PDF/EPUB engines, persistent IndexedDB personal catalog, 3D flipbook, reflow reader & gestures.
+ * Integrates PDF/EPUB engines, persistent IndexedDB personal catalog, 3D flipbook,
+ * continuous vertical scroll, reflow reader, study suite, gestures & ergonomics.
  */
 
 class LuminaApp {
@@ -10,9 +11,19 @@ class LuminaApp {
     this.pages = [];
     this.currentPage = 1;
     this.totalPages = 1;
-    this.readingMode = '3d'; // '3d' | 'reflow'
+    this.readingMode = '3d'; // '3d' | 'reflow' | 'scroll'
     this.hudVisible = true;
+    this.isSoloMode = false;
     this.activeDrawer = null;
+
+    // Catalog state
+    this.catalogTab = 'books'; // 'books' | 'trash'
+    this.catalogView = 'grid'; // 'grid' | 'list'
+    this.catalogSort = 'recent';
+    this.catalogTagFilter = 'all';
+
+    // Pastel Highlighter active color
+    this.activeHighlighterColor = 'yellow';
 
     this.init();
   }
@@ -28,11 +39,11 @@ class LuminaApp {
     // Initialize local database catalog
     await window.bookStorage.init();
     await this.refreshCatalogCount();
+    this._updateReadingAnalyticsSummary();
 
     // Check if user has previously saved books in their personal catalog
-    const savedBooks = await window.bookStorage.getAllBooks();
+    const savedBooks = await window.bookStorage.getAllBooks(false);
     if (savedBooks.length > 0) {
-      // Load the most recently opened book
       const lastBook = await window.bookStorage.getBook(savedBooks[0].id);
       if (lastBook && lastBook.fileData) {
         await this._loadPDFFromBuffer(lastBook.fileData, lastBook.fileName, lastBook.id, lastBook.lastPage || 1);
@@ -41,7 +52,6 @@ class LuminaApp {
         await this.loadBook(window.DEMO_BOOK);
       }
     } else {
-      // Load initial user manual
       await this.loadBook(window.DEMO_BOOK);
     }
 
@@ -67,26 +77,39 @@ class LuminaApp {
       readerWorkspace: document.getElementById('readerWorkspace'),
       docActiveTitle: document.getElementById('docActiveTitle'),
 
-      // Panels
+      // Reading Mode Panels
       panelFlipbook: document.getElementById('panelFlipbook'),
       panelReflow: document.getElementById('panelReflow'),
+      panelScroll: document.getElementById('panelScroll'),
       flipbookContainer: document.getElementById('flipbookContainer'),
       reflowContainer: document.getElementById('reflowContainer'),
+      scrollContainer: document.getElementById('scrollContainer'),
 
-      // Controls
+      // Overlays
+      colorTempOverlay: document.getElementById('colorTempOverlay'),
+      ultraDimOverlay: document.getElementById('ultraDimOverlay'),
+      btnExitSoloMode: document.getElementById('btnExitSoloMode'),
+
+      // Mode Controls
       btnMode3D: document.getElementById('btnMode3D'),
       btnModeReflow: document.getElementById('btnModeReflow'),
+      btnModeScroll: document.getElementById('btnModeScroll'),
       btnSpreadSingle: document.getElementById('btnSpreadSingle'),
       btnSpreadDouble: document.getElementById('btnSpreadDouble'),
+
+      // Header tools
       btnHideUI: document.getElementById('btnHideUI'),
       floatingShowUIBtn: document.getElementById('floatingShowUIBtn'),
+      btnSoloMode: document.getElementById('btnSoloMode'),
+      btnGridOverview: document.getElementById('btnGridOverview'),
+      btnToggleThumbnailsSidebar: document.getElementById('btnToggleThumbnailsSidebar'),
       btnOpenFile: document.getElementById('btnOpenFile'),
       filePicker: document.getElementById('filePicker'),
       btnFullscreen: document.getElementById('btnFullscreen'),
       btnOpenCatalog: document.getElementById('btnOpenCatalog'),
       catalogCountPill: document.getElementById('catalogCountPill'),
 
-      // Navigation
+      // Navigation HUD
       btnPrevPage: document.getElementById('btnPrevPage'),
       btnNextPage: document.getElementById('btnNextPage'),
       pageScrubber: document.getElementById('pageScrubber'),
@@ -94,6 +117,19 @@ class LuminaApp {
       readingStatLabel: document.getElementById('readingStatLabel'),
       btnBookmarkToggle: document.getElementById('btnBookmarkToggle'),
       bookmarkStarIcon: document.getElementById('bookmarkStarIcon'),
+
+      // Reading Tools Menu
+      btnReadingToolsMenu: document.getElementById('btnReadingToolsMenu'),
+      readingToolsPopupMenu: document.getElementById('readingToolsPopupMenu'),
+      btnToolRuler: document.getElementById('btnToolRuler'),
+      btnToolMagnifier: document.getElementById('btnToolMagnifier'),
+      btnToolDraw: document.getElementById('btnToolDraw'),
+      btnToolCompare: document.getElementById('btnToolCompare'),
+      btnToolFlashcards: document.getElementById('btnToolFlashcards'),
+      btnSlideshowToggle: document.getElementById('btnSlideshowToggle'),
+      btnToolQRShare: document.getElementById('btnToolQRShare'),
+      btnToolOneHand: document.getElementById('btnToolOneHand'),
+      btnToolOrientation: document.getElementById('btnToolOrientation'),
 
       // TTS Audio
       btnStartTTS: document.getElementById('btnStartTTS'),
@@ -118,12 +154,33 @@ class LuminaApp {
       drawerSettings: document.getElementById('drawerSettings'),
       drawerExport: document.getElementById('drawerExport'),
 
-      // Catalog elements
+      // Catalog Elements
+      tabCatalogBooks: document.getElementById('tabCatalogBooks'),
+      tabCatalogTrash: document.getElementById('tabCatalogTrash'),
+      catalogAddBanner: document.getElementById('catalogAddBanner'),
       btnCatalogUpload: document.getElementById('btnCatalogUpload'),
       catalogSearchInput: document.getElementById('catalogSearchInput'),
+      catalogSortSelect: document.getElementById('catalogSortSelect'),
+      btnCatalogViewGrid: document.getElementById('btnCatalogViewGrid'),
+      btnCatalogViewList: document.getElementById('btnCatalogViewList'),
+      catalogTagsChipRow: document.getElementById('catalogTagsChipRow'),
       catalogListContainer: document.getElementById('catalogListContainer'),
+      statsTotalMinutes: document.getElementById('statsTotalMinutes'),
+      statsBooksCount: document.getElementById('statsBooksCount'),
+      statsCompletedCount: document.getElementById('statsCompletedCount'),
 
-      // Drawer Content
+      // Metadata Modal
+      metadataEditModal: document.getElementById('metadataEditModal'),
+      editMetaBookId: document.getElementById('editMetaBookId'),
+      editMetaTitleInput: document.getElementById('editMetaTitleInput'),
+      editMetaAuthorInput: document.getElementById('editMetaAuthorInput'),
+      editMetaTagsInput: document.getElementById('editMetaTagsInput'),
+      btnCloseMetaModal: document.getElementById('btnCloseMetaModal'),
+      btnCancelEditMeta: document.getElementById('btnCancelEditMeta'),
+      btnSaveEditMeta: document.getElementById('btnSaveEditMeta'),
+
+      // Notes & Highlighter
+      hlColorPicker: document.getElementById('hlColorPicker'),
       tocListContainer: document.getElementById('tocListContainer'),
       searchInput: document.getElementById('searchInput'),
       searchResultsContainer: document.getElementById('searchResultsContainer'),
@@ -133,15 +190,31 @@ class LuminaApp {
       btnSaveNote: document.getElementById('btnSaveNote'),
       notesListContainer: document.getElementById('notesListContainer'),
 
-      // Style inputs
+      // Settings Inputs
+      colorTempSlider: document.getElementById('colorTempSlider'),
+      ultraDimSlider: document.getElementById('ultraDimSlider'),
+      highContrastScanToggle: document.getElementById('highContrastScanToggle'),
+      smartInvertDarkToggle: document.getElementById('smartInvertDarkToggle'),
       fontSizeSlider: document.getElementById('fontSizeSlider'),
       lineHeightSlider: document.getElementById('lineHeightSlider'),
+      marginLateralSlider: document.getElementById('marginLateralSlider'),
       fontFamilySelect: document.getElementById('fontFamilySelect'),
+      localFontFileInput: document.getElementById('localFontFileInput'),
+      hyphenationToggle: document.getElementById('hyphenationToggle'),
       bionicToggle: document.getElementById('bionicToggle'),
       soundEffectsToggle: document.getElementById('soundEffectsToggle'),
       ambientSoundSelect: document.getElementById('ambientSoundSelect'),
 
-      // Exports
+      // Export Actions
+      exportRangeStart: document.getElementById('exportRangeStart'),
+      exportRangeEnd: document.getElementById('exportRangeEnd'),
+      btnExportRangeMd: document.getElementById('btnExportRangeMd'),
+      btnExportRangeEpub: document.getElementById('btnExportRangeEpub'),
+      btnExportCitationsAPA: document.getElementById('btnExportCitationsAPA'),
+      btnExportCitationsMLA: document.getElementById('btnExportCitationsMLA'),
+      btnExportCitationsChicago: document.getElementById('btnExportCitationsChicago'),
+      btnOpenCoverGen: document.getElementById('btnOpenCoverGen'),
+      btnPrintInkSaving: document.getElementById('btnPrintInkSaving'),
       btnExportEpub: document.getElementById('btnExportEpub'),
       btnExportHtml: document.getElementById('btnExportHtml'),
       btnExportMarkdown: document.getElementById('btnExportMarkdown'),
@@ -166,11 +239,14 @@ class LuminaApp {
   }
 
   _setupEventListeners() {
-    // Mode Switching
+    // 1. Reading Modes
     this.dom.btnMode3D.addEventListener('click', () => this.setReadingMode('3d'));
     this.dom.btnModeReflow.addEventListener('click', () => this.setReadingMode('reflow'));
+    if (this.dom.btnModeScroll) {
+      this.dom.btnModeScroll.addEventListener('click', () => this.setReadingMode('scroll'));
+    }
 
-    // Spread Switching (1 Página vs 2 Páginas)
+    // 2. Spread Switching (1 Página vs 2 Páginas)
     if (this.dom.btnSpreadSingle) {
       this.dom.btnSpreadSingle.addEventListener('click', () => this.setSpreadMode('single'));
     }
@@ -178,7 +254,13 @@ class LuminaApp {
       this.dom.btnSpreadDouble.addEventListener('click', () => this.setSpreadMode('double'));
     }
 
-    // Hide UI
+    // 3. Immersive Solo Mode & Hide UI
+    if (this.dom.btnSoloMode) {
+      this.dom.btnSoloMode.addEventListener('click', () => this.toggleSoloMode());
+    }
+    if (this.dom.btnExitSoloMode) {
+      this.dom.btnExitSoloMode.addEventListener('click', () => this.toggleSoloMode(false));
+    }
     if (this.dom.btnHideUI) {
       this.dom.btnHideUI.addEventListener('click', () => this.toggleHUD(false));
     }
@@ -186,7 +268,89 @@ class LuminaApp {
       this.dom.floatingShowUIBtn.addEventListener('click', () => this.toggleHUD(true));
     }
 
-    // File Pickers
+    // 4. Grid Overview & Sidebar Thumbnails
+    if (this.dom.btnGridOverview) {
+      this.dom.btnGridOverview.addEventListener('click', () => {
+        if (window.studyTools) window.studyTools.openGridOverview();
+      });
+    }
+    if (this.dom.btnToggleThumbnailsSidebar) {
+      this.dom.btnToggleThumbnailsSidebar.addEventListener('click', () => {
+        if (window.studyTools) window.studyTools.toggleThumbnailsSidebar();
+      });
+    }
+
+    // 5. Reading Tools Menu
+    if (this.dom.btnReadingToolsMenu) {
+      this.dom.btnReadingToolsMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.dom.readingToolsPopupMenu.classList.toggle('open');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.reading-tools-trigger-wrapper')) {
+          this.dom.readingToolsPopupMenu.classList.remove('open');
+        }
+      });
+    }
+
+    // Tools Menu Items
+    if (this.dom.btnToolRuler) {
+      this.dom.btnToolRuler.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.studyTools.toggleRuler();
+      });
+    }
+    if (this.dom.btnToolMagnifier) {
+      this.dom.btnToolMagnifier.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.studyTools.toggleMagnifier();
+      });
+    }
+    if (this.dom.btnToolDraw) {
+      this.dom.btnToolDraw.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.drawingController.toggle();
+      });
+    }
+    if (this.dom.btnToolCompare) {
+      this.dom.btnToolCompare.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.studyTools.openPageComparator();
+      });
+    }
+    if (this.dom.btnToolFlashcards) {
+      this.dom.btnToolFlashcards.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.studyTools.openFlashcardsModal();
+      });
+    }
+    if (this.dom.btnSlideshowToggle) {
+      this.dom.btnSlideshowToggle.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.studyTools.toggleSlideshow();
+      });
+    }
+    if (this.dom.btnToolQRShare) {
+      this.dom.btnToolQRShare.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.quickShare.showQRCodeModal();
+      });
+    }
+    if (this.dom.btnToolOneHand) {
+      this.dom.btnToolOneHand.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.quickShare.toggleOneHandMode();
+      });
+    }
+    if (this.dom.btnToolOrientation) {
+      this.dom.btnToolOrientation.addEventListener('click', () => {
+        this.dom.readingToolsPopupMenu.classList.remove('open');
+        window.quickShare.toggleOrientationLock();
+      });
+    }
+
+    // 6. File Pickers
     this.dom.btnOpenFile.addEventListener('click', () => this.dom.filePicker.click());
     if (this.dom.btnCatalogUpload) {
       this.dom.btnCatalogUpload.addEventListener('click', () => this.dom.filePicker.click());
@@ -198,7 +362,7 @@ class LuminaApp {
       }
     });
 
-    // Navigation
+    // 7. Navigation
     this.dom.btnPrevPage.addEventListener('click', () => this.prevPage());
     this.dom.btnNextPage.addEventListener('click', () => this.nextPage());
 
@@ -209,9 +373,10 @@ class LuminaApp {
 
     this.dom.btnFullscreen.addEventListener('click', () => this.toggleFullscreen());
 
-    // Drawer Toggles
+    // 8. Drawers
     this.dom.btnOpenCatalog.addEventListener('click', () => {
       this.renderCatalog();
+      this._updateReadingAnalyticsSummary();
       this.toggleDrawer('drawerCatalog');
     });
 
@@ -226,27 +391,161 @@ class LuminaApp {
       btn.addEventListener('click', () => this.closeAllDrawers());
     });
 
-    // Catalog search
+    // 9. Catalog Tabs, Filters & Views
+    if (this.dom.tabCatalogBooks) {
+      this.dom.tabCatalogBooks.addEventListener('click', () => {
+        this.catalogTab = 'books';
+        this.dom.tabCatalogBooks.classList.add('active');
+        this.dom.tabCatalogTrash.classList.remove('active');
+        this.dom.catalogAddBanner.style.display = 'block';
+        this.renderCatalog();
+      });
+    }
+    if (this.dom.tabCatalogTrash) {
+      this.dom.tabCatalogTrash.addEventListener('click', () => {
+        this.catalogTab = 'trash';
+        this.dom.tabCatalogTrash.classList.add('active');
+        this.dom.tabCatalogBooks.classList.remove('active');
+        this.dom.catalogAddBanner.style.display = 'none';
+        this.renderCatalog();
+      });
+    }
+
+    if (this.dom.btnCatalogViewGrid) {
+      this.dom.btnCatalogViewGrid.addEventListener('click', () => {
+        this.catalogView = 'grid';
+        this.dom.btnCatalogViewGrid.classList.add('active');
+        this.dom.btnCatalogViewList.classList.remove('active');
+        this.renderCatalog();
+      });
+    }
+    if (this.dom.btnCatalogViewList) {
+      this.dom.btnCatalogViewList.addEventListener('click', () => {
+        this.catalogView = 'list';
+        this.dom.btnCatalogViewList.classList.add('active');
+        this.dom.btnCatalogViewGrid.classList.remove('active');
+        this.renderCatalog();
+      });
+    }
+
+    if (this.dom.catalogSortSelect) {
+      this.dom.catalogSortSelect.addEventListener('change', (e) => {
+        this.catalogSort = e.target.value;
+        this.renderCatalog();
+      });
+    }
+
+    if (this.dom.catalogTagsChipRow) {
+      this.dom.catalogTagsChipRow.addEventListener('click', (e) => {
+        const chip = e.target.closest('.catalog-tag-chip');
+        if (!chip) return;
+        this.dom.catalogTagsChipRow.querySelectorAll('.catalog-tag-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        this.catalogTagFilter = chip.dataset.tag;
+        this.renderCatalog();
+      });
+    }
+
     if (this.dom.catalogSearchInput) {
       this.dom.catalogSearchInput.addEventListener('input', (e) => {
         this.renderCatalog(e.target.value);
       });
     }
 
-    // Bookmarks & Notes
+    // 10. Metadata Editor Modal
+    if (this.dom.btnCloseMetaModal) {
+      this.dom.btnCloseMetaModal.addEventListener('click', () => this.dom.metadataEditModal.classList.remove('open'));
+    }
+    if (this.dom.btnCancelEditMeta) {
+      this.dom.btnCancelEditMeta.addEventListener('click', () => this.dom.metadataEditModal.classList.remove('open'));
+    }
+    if (this.dom.btnSaveEditMeta) {
+      this.dom.btnSaveEditMeta.addEventListener('click', () => this._saveEditedMetadata());
+    }
+
+    // 11. Bookmarks, Notes & Pastel Highlighter
     this.dom.btnBookmarkToggle.addEventListener('click', () => this.toggleCurrentBookmark());
     this.dom.btnSaveNote.addEventListener('click', () => this.saveCurrentNote());
 
-    // Search Engine
+    if (this.dom.hlColorPicker) {
+      this.dom.hlColorPicker.addEventListener('click', (e) => {
+        const swatch = e.target.closest('.hl-swatch-btn');
+        if (!swatch) return;
+        this.dom.hlColorPicker.querySelectorAll('.hl-swatch-btn').forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        this.activeHighlighterColor = swatch.dataset.color || 'yellow';
+        this.showToast(`Subrayador: ${swatch.title}`);
+      });
+    }
+
+    // 12. Search Engine
     this.dom.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
 
-    // Text-To-Speech Controls
+    // 13. TTS Controls
     this.dom.btnStartTTS.addEventListener('click', () => this.toggleTTS());
     this.dom.btnTTSPausePlay.addEventListener('click', () => this.toggleTTS());
     this.dom.btnTTSClose.addEventListener('click', () => this.stopTTS());
     this.dom.ttsSpeedSelect.addEventListener('change', (e) => {
       window.bookTTS.setRate(parseFloat(e.target.value));
     });
+
+    // 14. Display Settings, Filters & Ergonomics
+    if (this.dom.colorTempSlider) {
+      this.dom.colorTempSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value) / 100;
+        this.dom.colorTempOverlay.style.opacity = val.toFixed(2);
+      });
+    }
+
+    if (this.dom.ultraDimSlider) {
+      this.dom.ultraDimSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value) / 100;
+        this.dom.ultraDimOverlay.style.opacity = val.toFixed(2);
+      });
+    }
+
+    if (this.dom.highContrastScanToggle) {
+      this.dom.highContrastScanToggle.addEventListener('change', (e) => {
+        document.body.classList.toggle('scan-high-contrast', e.target.checked);
+        this.showToast(e.target.checked ? 'Alto contraste para escaneos activado' : 'Alto contraste desactivado');
+      });
+    }
+
+    if (this.dom.smartInvertDarkToggle) {
+      this.dom.smartInvertDarkToggle.addEventListener('change', (e) => {
+        document.body.classList.toggle('smart-dark-invert', e.target.checked);
+        this.showToast(e.target.checked ? 'Inversión inteligente activada' : 'Inversión inteligente desactivada');
+      });
+    }
+
+    if (this.dom.marginLateralSlider) {
+      this.dom.marginLateralSlider.addEventListener('input', (e) => {
+        const px = e.target.value;
+        document.documentElement.style.setProperty('--content-margin-lateral', `${px}px`);
+        document.querySelectorAll('.page-content-wrapper').forEach(el => {
+          el.style.paddingLeft = `${px}px`;
+          el.style.paddingRight = `${px}px`;
+        });
+      });
+    }
+
+    if (this.dom.hyphenationToggle) {
+      this.dom.hyphenationToggle.addEventListener('change', (e) => {
+        const val = e.target.checked ? 'auto' : 'manual';
+        document.querySelectorAll('.reflow-page, .dynamic-page-text').forEach(el => {
+          el.style.hyphens = val;
+          el.style.textAlign = e.target.checked ? 'justify' : 'left';
+        });
+      });
+    }
+
+    if (this.dom.localFontFileInput) {
+      this.dom.localFontFileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          window.quickShare.loadLocalFontFile(e.target.files[0]);
+        }
+      });
+    }
 
     // Themes
     document.querySelectorAll('.theme-pill-btn').forEach(btn => {
@@ -285,7 +584,59 @@ class LuminaApp {
       }
     });
 
-    // Exports
+    // 15. Range & Citation Exports
+    if (this.dom.btnExportRangeMd) {
+      this.dom.btnExportRangeMd.addEventListener('click', () => {
+        const s = parseInt(this.dom.exportRangeStart.value) || 1;
+        const e = parseInt(this.dom.exportRangeEnd.value) || s;
+        window.universalExporter.exportPageRange(this.currentDoc?.title, this.currentDoc?.author, this.pages, 'md', s, e);
+        this.showToast(`Rango pág. ${s}-${e} exportado`);
+      });
+    }
+
+    if (this.dom.btnExportRangeEpub) {
+      this.dom.btnExportRangeEpub.addEventListener('click', () => {
+        const s = parseInt(this.dom.exportRangeStart.value) || 1;
+        const e = parseInt(this.dom.exportRangeEnd.value) || s;
+        window.universalExporter.exportPageRange(this.currentDoc?.title, this.currentDoc?.author, this.pages, 'epub', s, e);
+        this.showToast(`Extracto EPUB (pág. ${s}-${e}) descargado`);
+      });
+    }
+
+    if (this.dom.btnExportCitationsAPA) {
+      this.dom.btnExportCitationsAPA.addEventListener('click', () => {
+        window.universalExporter.exportAcademicCitations(this.currentDoc?.title, this.currentDoc?.author, window.bookAnnotations.highlights, 'APA');
+        this.showToast('Citas en formato APA exportadas');
+      });
+    }
+
+    if (this.dom.btnExportCitationsMLA) {
+      this.dom.btnExportCitationsMLA.addEventListener('click', () => {
+        window.universalExporter.exportAcademicCitations(this.currentDoc?.title, this.currentDoc?.author, window.bookAnnotations.highlights, 'MLA');
+        this.showToast('Citas en formato MLA exportadas');
+      });
+    }
+
+    if (this.dom.btnExportCitationsChicago) {
+      this.dom.btnExportCitationsChicago.addEventListener('click', () => {
+        window.universalExporter.exportAcademicCitations(this.currentDoc?.title, this.currentDoc?.author, window.bookAnnotations.highlights, 'Chicago');
+        this.showToast('Citas en formato Chicago exportadas');
+      });
+    }
+
+    if (this.dom.btnOpenCoverGen) {
+      this.dom.btnOpenCoverGen.addEventListener('click', () => {
+        window.coverGenerator.openModal(this.currentDoc?.title, this.currentDoc?.author);
+      });
+    }
+
+    if (this.dom.btnPrintInkSaving) {
+      this.dom.btnPrintInkSaving.addEventListener('click', () => {
+        window.quickShare.triggerInkSavingPrint();
+      });
+    }
+
+    // Standard Full Exports
     this.dom.btnExportEpub.addEventListener('click', () => this.exportEpub());
     this.dom.btnExportHtml.addEventListener('click', () => this.exportStandaloneHtml());
     this.dom.btnExportMarkdown.addEventListener('click', () => this.exportMarkdown());
@@ -304,6 +655,10 @@ class LuminaApp {
         if (this.readingMode === '3d') this.flipbook.setZoom(factor);
       },
       onDoubleTap: () => {
+        if (this.readingMode === '3d') this.flipbook.resetZoom();
+      },
+      onTwoFingerTap: () => this.prevPage(),
+      onThreeFingerTap: () => {
         if (this.readingMode === '3d') this.flipbook.resetZoom();
       }
     });
@@ -329,9 +684,17 @@ class LuminaApp {
         case 'F':
           this.toggleFullscreen();
           break;
+        case 'g':
+        case 'G':
+          if (window.studyTools) window.studyTools.openGridOverview();
+          break;
+        case 'z':
+        case 'Z':
+          this.toggleSoloMode();
+          break;
         case 'm':
         case 'M':
-          this.setReadingMode(this.readingMode === '3d' ? 'reflow' : '3d');
+          this.setReadingMode(this.readingMode === '3d' ? 'reflow' : (this.readingMode === 'reflow' ? 'scroll' : '3d'));
           break;
         case 'h':
         case 'H':
@@ -339,6 +702,7 @@ class LuminaApp {
           break;
         case 'Escape':
           this.closeAllDrawers();
+          if (this.isSoloMode) this.toggleSoloMode(false);
           break;
       }
     });
@@ -352,9 +716,10 @@ class LuminaApp {
       overlay.classList.add('drag-over');
     });
 
-    overlay.addEventListener('dragleave', (e) => {
-      e.preventDefault();
-      overlay.classList.remove('drag-over');
+    window.addEventListener('dragleave', (e) => {
+      if (e.relatedTarget === null || e.clientX === 0) {
+        overlay.classList.remove('drag-over');
+      }
     });
 
     window.addEventListener('drop', (e) => {
@@ -366,143 +731,159 @@ class LuminaApp {
     });
   }
 
-  // --- Document Loading Pipeline & Persistent Storage ---
+  // --- File Uploading & PDF Processing ---
   async handleFileUpload(file) {
-    const filename = file.name.toLowerCase();
+    const ext = file.name.split('.').pop().toLowerCase();
     this.showToast(`Procesando ${file.name}...`, 'info');
 
     try {
-      if (filename.endsWith('.pdf')) {
-        const arrayBuffer = await file.arrayBuffer();
-        await this._loadPDFFromBuffer(arrayBuffer, file.name, null, 1, true, file.size);
-      } else if (filename.endsWith('.epub')) {
-        await this._loadEPUBFile(file);
-      } else if (filename.endsWith('.txt') || filename.endsWith('.md')) {
-        await this._loadTextFile(file);
+      if (ext === 'pdf') {
+        const buffer = await file.arrayBuffer();
+        const savedBook = await window.bookStorage.saveBook({
+          title: file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+          author: 'Documento local',
+          fileName: file.name,
+          fileSize: file.size,
+          fileData: buffer.slice(0)
+        });
+
+        await this._loadPDFFromBuffer(buffer, file.name, savedBook ? savedBook.id : null, 1);
+        await this.refreshCatalogCount();
+        this.showToast(`Guardado en catálogo: ${file.name}`);
+      } else if (ext === 'epub') {
+        const bookModel = await window.epubEngine.parseEPUB(file);
+        await this.loadBook(bookModel);
+        this.showToast(`EPUB cargado: ${bookModel.title}`);
+      } else if (ext === 'txt' || ext === 'md') {
+        const text = await file.text();
+        const bookModel = this._parseTextDocument(text, file.name);
+        await this.loadBook(bookModel);
+        this.showToast(`Documento cargado: ${file.name}`);
       } else {
-        this.showToast('Formato no compatible. Admite PDF, EPUB, TXT o Markdown.', 'danger');
+        this.showToast('Formato no soportado (.pdf, .epub, .txt, .md)', 'danger');
       }
-    } catch (err) {
-      console.error('Error al procesar archivo:', err);
-      this.showToast(`Error al abrir documento: ${err.message}`, 'danger');
+    } catch (e) {
+      console.error('Error al abrir documento:', e);
+      this.showToast(`Error al abrir documento: ${e.message}`, 'danger');
     }
   }
 
-  async _loadPDFFromBuffer(arrayBuffer, originalFileName, existingBookId = null, initialPage = 1, shouldSave = false, fileSize = 0) {
-    // Keep an intact copy of raw bytes before passing to PDF.js
-    const safeBuffer = arrayBuffer.slice ? arrayBuffer.slice(0) : arrayBuffer;
+  async _loadPDFFromBuffer(arrayBuffer, fileName, bookId = null, startPage = 1) {
+    this.currentBookId = bookId;
+    const cleanTitle = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
 
-    const result = await window.pdfEngine.loadDocument(safeBuffer, (percent) => {
-      if (this.dom.pageBadgePill) this.dom.pageBadgePill.innerText = `${percent}%`;
-    });
+    try {
+      const pdfEngine = window.pdfEngine;
+      const pdfInfo = await pdfEngine.loadPDF(arrayBuffer.slice(0));
 
-    // Instant lightweight page list (does not exhaust browser canvas memory)
+      const pagesList = [];
+      for (let i = 1; i <= pdfInfo.numPages; i++) {
+        pagesList.push({
+          pageNum: i,
+          title: `Página ${i}`,
+          canvas: null,
+          text: ''
+        });
+      }
+
+      this.currentDoc = {
+        title: cleanTitle,
+        author: 'Documento PDF',
+        outline: pdfInfo.outline || []
+      };
+      this.pages = pagesList;
+      this.totalPages = pdfInfo.numPages;
+      this.currentPage = Math.min(startPage || 1, this.totalPages);
+
+      this.dom.docActiveTitle.innerText = `${cleanTitle} — ${this.totalPages} págs`;
+      this.dom.pageBadgePill.innerText = `Pág. ${this.currentPage} / ${this.totalPages}`;
+      this.dom.pageScrubber.min = 1;
+      this.dom.pageScrubber.max = this.totalPages;
+      this.dom.pageScrubber.value = this.currentPage;
+
+      // Update range export defaults
+      if (this.dom.exportRangeStart) this.dom.exportRangeStart.max = this.totalPages;
+      if (this.dom.exportRangeEnd) {
+        this.dom.exportRangeEnd.max = this.totalPages;
+        this.dom.exportRangeEnd.value = Math.min(this.totalPages, 10);
+      }
+
+      this.flipbook.setPages(this.pages);
+      this.flipbook.goToPage(this.currentPage);
+      this.reflowReader.setPages(this.pages);
+
+      if (this.readingMode === 'scroll') {
+        this._renderVerticalScrollContainer();
+      }
+
+      this._renderTOCList(pdfInfo.outline || []);
+      this._renderBookmarks();
+      this._renderNotes();
+      this._updateHUDStats();
+
+      // Generate cover thumbnail in background
+      pdfEngine.renderPage(1).then(p1 => {
+        if (p1 && p1.canvas && bookId) {
+          const thumbUrl = p1.canvas.toDataURL('image/jpeg', 0.7);
+          window.bookStorage.updateMetadata(bookId, { coverThumbnail: thumbUrl });
+        }
+      }).catch(() => {});
+
+      // Cache text sample for global search
+      pdfEngine.extractPageText(1).then(txt => {
+        if (txt && bookId) {
+          window.bookStorage.saveCachedText(bookId, txt);
+        }
+      }).catch(() => {});
+
+    } catch (err) {
+      console.error('Error al inicializar PDF:', err);
+      this.showToast(`Error al procesar PDF: ${err.message}`, 'danger');
+    }
+  }
+
+  _parseTextDocument(rawText, filename) {
+    const lines = rawText.split('\n');
+    const title = filename.replace(/\.[^/.]+$/, '');
     const pages = [];
-    for (let p = 1; p <= result.numPages; p++) {
+    const linesPerPage = 32;
+
+    for (let i = 0; i < lines.length; i += linesPerPage) {
+      const pageText = lines.slice(i, i + linesPerPage).join('\n');
       pages.push({
-        pageNum: p,
-        title: `Página ${p}`,
-        text: ''
+        pageNum: Math.floor(i / linesPerPage) + 1,
+        title: `Página ${Math.floor(i / linesPerPage) + 1}`,
+        text: pageText,
+        html: `<p style="white-space:pre-wrap; line-height:1.7;">${pageText}</p>`
       });
     }
 
-    // Safely generate cover thumbnail from page 1 only
-    let coverThumb = null;
-    try {
-      const coverRender = await window.pdfEngine.renderPage(1);
-      if (coverRender && coverRender.canvas) {
-        coverThumb = coverRender.canvas.toDataURL('image/jpeg', 0.65);
-      }
-    } catch (e) {
-      console.warn('Extracción de portada omitida:', e);
-    }
-
-    const title = result.metadata.title || originalFileName.replace(/\.[^/.]+$/, "");
-    const author = result.metadata.author || 'Autor desconocido';
-
-    const docModel = {
-      title,
-      author,
-      numPages: result.numPages,
-      outline: result.outline,
-      pages: pages
+    return {
+      title: title,
+      author: 'Texto plano',
+      pages: pages,
+      outline: []
     };
-
-    // Save into persistent local storage if it's a new upload
-    if (shouldSave) {
-      try {
-        const savedRecord = await window.bookStorage.saveBook({
-          title,
-          author,
-          fileName: originalFileName,
-          fileSize: fileSize || safeBuffer.byteLength,
-          totalPages: result.numPages,
-          lastPage: initialPage,
-          coverThumbnail: coverThumb,
-          fileData: safeBuffer
-        });
-        if (savedRecord) {
-          this.currentBookId = savedRecord.id;
-          await this.refreshCatalogCount();
-          this.showToast('PDF guardado en tu catálogo personal');
-        }
-      } catch (e) {
-        console.warn('Error al guardar en catálogo local:', e);
-      }
-    } else if (existingBookId) {
-      this.currentBookId = existingBookId;
-    }
-
-    await this.loadBook(docModel);
-    if (initialPage > 1) {
-      this.goToPage(initialPage);
-    }
-  }
-
-  async _loadEPUBFile(file) {
-    const parsed = await window.epubEngine.parseEpub(file);
-    await this.loadBook(parsed);
-    this.showToast(`EPUB cargado: ${parsed.title}`);
-  }
-
-  async _loadTextFile(file) {
-    const content = await file.text();
-    const rawPages = content.split(/\n(?=#{1,2}\s)/);
-    const pages = rawPages.map((chunk, idx) => ({
-      pageNum: idx + 1,
-      title: `Sección ${idx + 1}`,
-      text: chunk.trim()
-    }));
-
-    const docModel = {
-      title: file.name.replace(/\.[^/.]+$/, ""),
-      author: 'Documento de texto',
-      numPages: pages.length,
-      outline: pages.map(p => ({ title: p.title, page: p.pageNum, items: [] })),
-      pages: pages
-    };
-
-    await this.loadBook(docModel);
-    this.showToast('Documento cargado correctamente');
   }
 
   async loadBook(bookModel) {
     this.currentDoc = bookModel;
     this.pages = bookModel.pages || [];
-    this.totalPages = this.pages.length;
+    this.totalPages = this.pages.length || 1;
     this.currentPage = 1;
 
-    // Header Title
-    this.dom.docActiveTitle.innerText = `${bookModel.title}`;
-
-    // Scrubber
+    this.dom.docActiveTitle.innerText = `${bookModel.title} — ${bookModel.author || ''}`;
+    this.dom.pageBadgePill.innerText = `Pág. 1 / ${this.totalPages}`;
     this.dom.pageScrubber.min = 1;
     this.dom.pageScrubber.max = this.totalPages;
     this.dom.pageScrubber.value = 1;
 
-    // Load into 3D Flipbook & Reflow Reader
     this.flipbook.setPages(this.pages);
     this.reflowReader.setPages(this.pages);
+
+    if (this.readingMode === 'scroll') {
+      this._renderVerticalScrollContainer();
+    }
 
     this._renderTOCList(bookModel.outline || []);
     this._renderBookmarks();
@@ -510,9 +891,9 @@ class LuminaApp {
     this._updateHUDStats();
   }
 
-  // --- Personal Catalog UI ---
+  // --- Personal Catalog UI & Recycle Bin ---
   async refreshCatalogCount() {
-    const books = await window.bookStorage.getAllBooks();
+    const books = await window.bookStorage.getAllBooks(false);
     if (this.dom.catalogCountPill) {
       this.dom.catalogCountPill.innerText = books.length;
     }
@@ -522,61 +903,178 @@ class LuminaApp {
     const container = this.dom.catalogListContainer;
     if (!container) return;
 
-    const books = await window.bookStorage.getAllBooks();
-    let filtered = books;
-    if (filterQuery && filterQuery.trim()) {
-      const q = filterQuery.toLowerCase().trim();
-      filtered = books.filter(b => b.title.toLowerCase().includes(q) || b.fileName.toLowerCase().includes(q));
+    let books;
+    if (this.catalogTab === 'trash') {
+      books = await window.bookStorage.getTrashBooks();
+    } else {
+      books = await window.bookStorage.getAllBooks(false);
     }
 
-    if (filtered.length === 0) {
+    // Apply tag filter
+    if (this.catalogTab === 'books' && this.catalogTagFilter && this.catalogTagFilter !== 'all') {
+      books = books.filter(b => b.tags && b.tags.includes(this.catalogTagFilter));
+    }
+
+    // Apply search filter (Transversal Search)
+    if (filterQuery && filterQuery.trim()) {
+      const q = filterQuery.toLowerCase().trim();
+      books = books.filter(b =>
+        (b.title && b.title.toLowerCase().includes(q)) ||
+        (b.author && b.author.toLowerCase().includes(q)) ||
+        (b.fileName && b.fileName.toLowerCase().includes(q))
+      );
+    }
+
+    // Apply Sorting
+    books.sort((a, b) => {
+      switch (this.catalogSort) {
+        case 'title':
+          return (a.title || '').localeCompare(b.title || '');
+        case 'progress':
+          const pA = a.totalPages ? a.lastPage / a.totalPages : 0;
+          const pB = b.totalPages ? b.lastPage / b.totalPages : 0;
+          return pB - pA;
+        case 'size':
+          return (b.fileSize || 0) - (a.fileSize || 0);
+        case 'pages':
+          return (b.totalPages || 0) - (a.totalPages || 0);
+        case 'recent':
+        default:
+          return (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0);
+      }
+    });
+
+    if (books.length === 0) {
       container.innerHTML = `
         <div style="text-align:center; padding: 30px 10px; color: var(--hud-subtext);">
-          <p style="font-size: 0.88rem; margin-bottom: 6px;">${filterQuery ? 'No hay documentos que coincidan con la búsqueda.' : 'No hay documentos en tu catálogo todavía.'}</p>
-          <p style="font-size: 0.78rem;">Usa el botón "+ Subir nuevo PDF" para guardar tus documentos aquí.</p>
+          <p style="font-size: 0.88rem; margin-bottom: 6px;">
+            ${this.catalogTab === 'trash' ? 'La papelera está vacía.' : (filterQuery ? 'No hay documentos que coincidan.' : 'No hay documentos en esta sección.')}
+          </p>
+          <p style="font-size: 0.78rem;">${this.catalogTab === 'trash' ? 'Los documentos eliminados se purgan tras 7 días.' : 'Usa el botón "+ Subir nuevo PDF" para guardar tus documentos.'}</p>
         </div>
       `;
       return;
     }
 
-    let html = '';
-    filtered.forEach(book => {
-      const sizeMb = (book.fileSize / (1024 * 1024)).toFixed(1);
-      const progressPercent = Math.round((book.lastPage / book.totalPages) * 100);
-      const dateStr = new Date(book.lastOpenedAt || book.addedAt).toLocaleDateString();
+    if (this.catalogView === 'list') {
+      // Table View
+      let tableHtml = `
+        <table class="catalog-table-view">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Páginas</th>
+              <th>Progreso</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
 
-      const thumbImg = book.coverThumbnail
-        ? `<img src="${book.coverThumbnail}" alt="Portada">`
-        : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="#6b7280" stroke-width="1.5" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+      books.forEach(book => {
+        const progressPercent = Math.round(((book.lastPage || 1) / (book.totalPages || 1)) * 100);
+        tableHtml += `
+          <tr>
+            <td>
+              <div style="font-weight:600; color:#fff;">${book.title}</div>
+              <div style="font-size:0.72rem; color:var(--hud-subtext);">${book.author || 'Autor'}</div>
+            </td>
+            <td>${book.lastPage} / ${book.totalPages}</td>
+            <td>${progressPercent}%</td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                ${this.catalogTab === 'books' ? `
+                  <button class="catalog-open-btn" onclick="window.luminaApp.openBookFromCatalog('${book.id}')">Abrir</button>
+                  <button class="catalog-open-btn" style="background:rgba(255,255,255,0.08);" title="Editar metadatos" onclick="window.luminaApp.openEditMetadataModal('${book.id}', event)">
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  </button>
+                  <button class="catalog-delete-btn" title="Mover a papelera" onclick="window.luminaApp.moveBookToTrash('${book.id}', event)">
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                ` : `
+                  <button class="catalog-open-btn" onclick="window.luminaApp.restoreBookFromTrash('${book.id}', event)">Restaurar</button>
+                  <button class="catalog-delete-btn" title="Eliminar definitivamente" onclick="window.luminaApp.permanentDeleteBook('${book.id}', event)">
+                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                  </button>
+                `}
+              </div>
+            </td>
+          </tr>
+        `;
+      });
 
-      html += `
-        <div class="catalog-card" data-book-id="${book.id}">
-          <div class="catalog-thumb-container">
-            ${thumbImg}
-          </div>
-          <div class="catalog-card-info">
-            <div class="catalog-card-title" title="${book.title}">${book.title}</div>
-            <div class="catalog-card-meta">${sizeMb} MB · Último acceso: ${dateStr}</div>
-            
-            <div class="catalog-progress-bar-wrap">
-              <div class="catalog-progress-bar-fill" style="width: ${progressPercent}%;"></div>
+      tableHtml += `</tbody></table>`;
+      container.innerHTML = tableHtml;
+    } else {
+      // Grid Cards View
+      let html = '';
+      books.forEach(book => {
+        const sizeMb = (book.fileSize / (1024 * 1024)).toFixed(1);
+        const progressPercent = Math.round(((book.lastPage || 1) / (book.totalPages || 1)) * 100);
+        const dateStr = new Date(book.lastOpenedAt || book.addedAt).toLocaleDateString();
+
+        const thumbImg = book.coverThumbnail
+          ? `<img src="${book.coverThumbnail}" alt="Portada">`
+          : `<svg viewBox="0 0 24 24" width="22" height="22" stroke="#6b7280" stroke-width="1.5" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+
+        const tagsBadges = (book.tags || []).map(t => `<span style="font-size:0.65rem; background:rgba(255,255,255,0.08); padding:1px 5px; border-radius:3px; margin-right:3px;">${t}</span>`).join('');
+
+        html += `
+          <div class="catalog-card" data-book-id="${book.id}">
+            <div class="catalog-thumb-container">
+              ${thumbImg}
             </div>
+            <div class="catalog-card-info">
+              <div class="catalog-card-title" title="${book.title}">${book.title}</div>
+              <div class="catalog-card-meta">${sizeMb} MB · ${dateStr}</div>
+              <div style="margin: 3px 0;">${tagsBadges}</div>
+              
+              <div class="catalog-progress-bar-wrap">
+                <div class="catalog-progress-bar-fill" style="width: ${progressPercent}%;"></div>
+              </div>
 
-            <div class="catalog-card-actions">
-              <span style="font-size: 0.74rem; color: var(--hud-subtext);">Pág. ${book.lastPage} / ${book.totalPages}</span>
-              <div style="display:flex; align-items:center; gap:6px;">
-                <button class="catalog-open-btn" onclick="window.luminaApp.openBookFromCatalog('${book.id}')">Abrir</button>
-                <button class="catalog-delete-btn" title="Eliminar del catálogo" onclick="window.luminaApp.deleteBookFromCatalog('${book.id}', event)">
-                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
+              <div class="catalog-card-actions">
+                <span style="font-size: 0.74rem; color: var(--hud-subtext);">Pág. ${book.lastPage || 1} / ${book.totalPages}</span>
+                <div style="display:flex; align-items:center; gap:6px;">
+                  ${this.catalogTab === 'books' ? `
+                    <button class="catalog-open-btn" onclick="window.luminaApp.openBookFromCatalog('${book.id}')">Abrir</button>
+                    <button class="catalog-open-btn" style="background:rgba(255,255,255,0.08); padding:5px;" title="Editar metadatos" onclick="window.luminaApp.openEditMetadataModal('${book.id}', event)">
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                    </button>
+                    <button class="catalog-delete-btn" title="Mover a papelera" onclick="window.luminaApp.moveBookToTrash('${book.id}', event)">
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  ` : `
+                    <button class="catalog-open-btn" onclick="window.luminaApp.restoreBookFromTrash('${book.id}', event)">Restaurar</button>
+                    <button class="catalog-delete-btn" title="Eliminar definitivamente" onclick="window.luminaApp.permanentDeleteBook('${book.id}', event)">
+                      <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                  `}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+  }
+
+  async _updateReadingAnalyticsSummary() {
+    const books = await window.bookStorage.getAllBooks(false);
+    let totalSecs = window.bookAnnotations.totalSecondsRead || 0;
+    let completedCount = 0;
+
+    books.forEach(b => {
+      totalSecs += (b.readingSeconds || 0);
+      if (b.completed || (b.lastPage && b.lastPage >= b.totalPages)) completedCount++;
     });
 
-    container.innerHTML = html;
+    const mins = Math.floor(totalSecs / 60);
+    if (this.dom.statsTotalMinutes) this.dom.statsTotalMinutes.innerText = `${mins}m`;
+    if (this.dom.statsBooksCount) this.dom.statsBooksCount.innerText = books.length;
+    if (this.dom.statsCompletedCount) this.dom.statsCompletedCount.innerText = completedCount;
   }
 
   async openBookFromCatalog(id) {
@@ -591,17 +1089,56 @@ class LuminaApp {
     this.showToast(`Abierto: ${book.title}`);
   }
 
-  async deleteBookFromCatalog(id, event) {
+  async moveBookToTrash(id, event) {
     if (event) event.stopPropagation();
-    if (!confirm('¿Deseas eliminar este documento del catálogo local?')) return;
-
-    await window.bookStorage.deleteBook(id);
-    if (this.currentBookId === id) {
-      this.currentBookId = null;
-    }
+    await window.bookStorage.moveToTrash(id);
     await this.refreshCatalogCount();
     await this.renderCatalog();
-    this.showToast('Documento eliminado del catálogo');
+    this.showToast('Documento movido a la papelera (se conservará 7 días)');
+  }
+
+  async restoreBookFromTrash(id, event) {
+    if (event) event.stopPropagation();
+    await window.bookStorage.restoreFromTrash(id);
+    await this.refreshCatalogCount();
+    await this.renderCatalog();
+    this.showToast('Documento restaurado en tu biblioteca');
+  }
+
+  async permanentDeleteBook(id, event) {
+    if (event) event.stopPropagation();
+    if (!confirm('¿Eliminar definitivamente este documento? Esta acción no se puede deshacer.')) return;
+    await window.bookStorage.permanentDelete(id);
+    await this.refreshCatalogCount();
+    await this.renderCatalog();
+    this.showToast('Documento eliminado definitivamente');
+  }
+
+  async openEditMetadataModal(id, event) {
+    if (event) event.stopPropagation();
+    const book = await window.bookStorage.getBook(id);
+    if (!book) return;
+
+    this.dom.editMetaBookId.value = book.id;
+    this.dom.editMetaTitleInput.value = book.title || '';
+    this.dom.editMetaAuthorInput.value = book.author || '';
+    this.dom.editMetaTagsInput.value = (book.tags || []).join(', ');
+
+    this.dom.metadataEditModal.classList.add('open');
+  }
+
+  async _saveEditedMetadata() {
+    const id = this.dom.editMetaBookId.value;
+    const title = this.dom.editMetaTitleInput.value.trim();
+    const author = this.dom.editMetaAuthorInput.value.trim();
+    const tags = this.dom.editMetaTagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
+
+    if (id && title) {
+      await window.bookStorage.updateMetadata(id, { title, author, tags });
+      this.dom.metadataEditModal.classList.remove('open');
+      await this.renderCatalog();
+      this.showToast('Metadatos actualizados');
+    }
   }
 
   // --- Spread Mode (1 Página vs 2 Páginas) ---
@@ -623,28 +1160,116 @@ class LuminaApp {
     this.showToast(mode === 'single' ? 'Vista: 1 página' : 'Vista: 2 páginas');
   }
 
-  // --- Reading Modes ---
+  // --- Reading Modes (3D, Reflow, Continuous Scroll) ---
   setReadingMode(mode) {
     this.readingMode = mode;
+
+    this.dom.btnMode3D.classList.toggle('active', mode === '3d');
+    this.dom.btnModeReflow.classList.toggle('active', mode === 'reflow');
+    if (this.dom.btnModeScroll) this.dom.btnModeScroll.classList.toggle('active', mode === 'scroll');
+
+    this.dom.panelFlipbook.classList.toggle('active-panel', mode === '3d');
+    this.dom.panelReflow.classList.toggle('active-panel', mode === 'reflow');
+    this.dom.panelScroll.classList.toggle('active-panel', mode === 'scroll');
+
     if (mode === '3d') {
-      this.dom.btnMode3D.classList.add('active');
-      this.dom.btnModeReflow.classList.remove('active');
-      this.dom.panelFlipbook.classList.add('active-panel');
-      this.dom.panelReflow.classList.remove('active-panel');
       this.flipbook.goToPage(this.currentPage);
-    } else {
-      this.dom.btnModeReflow.classList.add('active');
-      this.dom.btnMode3D.classList.remove('active');
-      this.dom.panelReflow.classList.add('active-panel');
-      this.dom.panelFlipbook.classList.remove('active-panel');
+    } else if (mode === 'reflow') {
       this.reflowReader.scrollToPage(this.currentPage);
+    } else if (mode === 'scroll') {
+      this._renderVerticalScrollContainer();
+      this._scrollToPageInScrollContainer(this.currentPage);
     }
+
+    this.showToast(mode === '3d' ? 'Modo Libro 3D' : (mode === 'reflow' ? 'Modo Texto Líquido' : 'Modo Scroll Vertical'));
+  }
+
+  _renderVerticalScrollContainer() {
+    const container = this.dom.scrollContainer;
+    if (!container) return;
+    container.innerHTML = '';
+
+    const total = this.totalPages || 1;
+    for (let p = 1; p <= total; p++) {
+      const slot = document.createElement('div');
+      slot.className = 'scroll-page-slot';
+      slot.id = `scrollSlot_${p}`;
+      slot.dataset.page = p;
+      slot.innerHTML = `
+        <span class="page-number-tag">Pág. ${p}</span>
+        <div class="scroll-slot-placeholder" style="color:var(--hud-subtext); font-size:0.85rem;">Cargando página ${p}...</div>
+      `;
+      container.appendChild(slot);
+    }
+
+    // Lazy load pages in vertical scroll
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const slot = entry.target;
+          const pageNum = parseInt(slot.dataset.page);
+
+          if (!slot.dataset.rendered) {
+            slot.dataset.rendered = 'true';
+            if (window.pdfEngine && window.pdfEngine.isLoaded) {
+              window.pdfEngine.renderPage(pageNum).then(res => {
+                if (res && res.canvas) {
+                  slot.querySelector('.scroll-slot-placeholder')?.remove();
+                  const c = document.createElement('canvas');
+                  c.width = res.canvas.width;
+                  c.height = res.canvas.height;
+                  const ctx = c.getContext('2d');
+                  ctx.drawImage(res.canvas, 0, 0);
+                  c.className = 'scroll-page-canvas';
+                  slot.appendChild(c);
+                }
+              }).catch(() => {});
+            } else if (this.pages[pageNum - 1]) {
+              const pData = this.pages[pageNum - 1];
+              slot.querySelector('.scroll-slot-placeholder')?.remove();
+              const div = document.createElement('div');
+              div.style.padding = '30px';
+              div.style.width = '100%';
+              div.innerHTML = `<h3>${pData.title || ''}</h3><p style="white-space:pre-wrap; line-height:1.7;">${pData.text || ''}</p>`;
+              slot.appendChild(div);
+            }
+          }
+
+          // Update HUD active page on scroll
+          this.currentPage = pageNum;
+          this._updateHUDStats();
+        }
+      });
+    }, { root: this.dom.panelScroll, rootMargin: '200px' });
+
+    container.querySelectorAll('.scroll-page-slot').forEach(s => observer.observe(s));
+  }
+
+  _scrollToPageInScrollContainer(pageNum) {
+    const slot = document.getElementById(`scrollSlot_${pageNum}`);
+    if (slot) {
+      slot.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  // --- Solo Mode (Zen / Solo Libro) ---
+  toggleSoloMode(forceState = null) {
+    this.isSoloMode = forceState !== null ? forceState : !this.isSoloMode;
+    document.body.classList.toggle('solo-mode-active', this.isSoloMode);
+    if (this.dom.btnExitSoloMode) {
+      this.dom.btnExitSoloMode.style.display = this.isSoloMode ? 'flex' : 'none';
+    }
+    this.showToast(this.isSoloMode ? 'Modo Solo Libro activado (Esc para salir)' : 'Modo Solo Libro desactivado');
   }
 
   // --- Navigation & Progress Tracking ---
   nextPage() {
     if (this.readingMode === '3d') {
       this.flipbook.next();
+    } else if (this.readingMode === 'scroll') {
+      if (this.currentPage < this.totalPages) {
+        this.goToPage(this.currentPage + 1);
+      }
     } else {
       if (this.currentPage < this.totalPages) {
         this.goToPage(this.currentPage + 1);
@@ -655,6 +1280,10 @@ class LuminaApp {
   prevPage() {
     if (this.readingMode === '3d') {
       this.flipbook.prev();
+    } else if (this.readingMode === 'scroll') {
+      if (this.currentPage > 1) {
+        this.goToPage(this.currentPage - 1);
+      }
     } else {
       if (this.currentPage > 1) {
         this.goToPage(this.currentPage - 1);
@@ -665,16 +1294,23 @@ class LuminaApp {
   goToPage(num) {
     const pageNum = Math.max(1, Math.min(this.totalPages, num));
     this.currentPage = pageNum;
+
     if (this.readingMode === '3d') {
       this.flipbook.goToPage(pageNum);
+    } else if (this.readingMode === 'scroll') {
+      this._scrollToPageInScrollContainer(pageNum);
     } else {
       this.reflowReader.scrollToPage(pageNum);
     }
+
+    if (window.studyTools) {
+      window.studyTools.updateSidebarActivePage(pageNum);
+    }
+
     this._updateHUDStats();
 
-    // Persist progress in local catalog
     if (this.currentBookId) {
-      window.bookStorage.updateProgress(this.currentBookId, this.currentPage).catch(() => {});
+      window.bookStorage.updateProgress(this.currentBookId, this.currentPage, this.totalPages).catch(() => {});
     }
   }
 
@@ -683,8 +1319,12 @@ class LuminaApp {
     this.totalPages = total;
     this._updateHUDStats();
 
+    if (window.studyTools) {
+      window.studyTools.updateSidebarActivePage(page);
+    }
+
     if (this.currentBookId) {
-      window.bookStorage.updateProgress(this.currentBookId, this.currentPage).catch(() => {});
+      window.bookStorage.updateProgress(this.currentBookId, this.currentPage, this.totalPages).catch(() => {});
     }
   }
 
@@ -694,7 +1334,7 @@ class LuminaApp {
 
     const isBookmarked = window.bookAnnotations.isBookmarked(this.currentPage);
     if (this.dom.bookmarkStarIcon) {
-      this.dom.bookmarkStarIcon.style.color = isBookmarked ? '#3b82f6' : 'inherit';
+      this.dom.bookmarkStarIcon.style.color = isBookmarked ? '#c28b38' : 'inherit';
     }
 
     const stats = window.bookAnnotations.getReadingStats(this.currentPage, this.totalPages);
@@ -807,10 +1447,11 @@ class LuminaApp {
   saveCurrentNote() {
     const text = this.dom.noteInput.value.trim();
     if (!text) return;
-    window.bookAnnotations.addNote(this.currentPage, text);
+    window.bookAnnotations.addNote(this.currentPage, text, 50, 50);
     this.dom.noteInput.value = '';
     this._renderNotes();
-    this.showToast('Nota guardada');
+    this.flipbook.renderCurrentView(); // Render sticky pin
+    this.showToast('Nota guardada con chincheta interactiva');
   }
 
   _renderNotes() {
@@ -826,9 +1467,9 @@ class LuminaApp {
     let html = '';
     notes.forEach(note => {
       html += `
-        <div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-left:2px solid #3b82f6; border-radius:4px; margin-bottom:6px;">
+        <div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-left:2px solid var(--accent-gold); border-radius:4px; margin-bottom:6px;">
           <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--hud-subtext); margin-bottom:3px;">
-            <span>Página ${note.page}</span>
+            <span>Página ${note.page} (Chincheta)</span>
             <span>${note.date}</span>
           </div>
           <p style="font-size:0.8rem; color:#d1d5db; white-space:pre-wrap;">${note.content}</p>
@@ -849,7 +1490,6 @@ class LuminaApp {
       return;
     }
 
-    // Extract text for pages if not yet cached
     if (window.pdfEngine && window.pdfEngine.isLoaded && (!this.pages[0] || !this.pages[0].text)) {
       countEl.innerText = 'Buscando en páginas...';
       for (let i = 0; i < Math.min(50, this.pages.length); i++) {
@@ -871,7 +1511,7 @@ class LuminaApp {
     results.slice(0, 30).forEach(r => {
       html += `
         <div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:4px; margin-bottom:6px; cursor:pointer;" onclick="window.luminaApp.goToPage(${r.page}); window.luminaApp.closeAllDrawers();">
-          <div style="font-size:0.72rem; font-weight:600; color:#3b82f6; margin-bottom:2px;">PÁGINA ${r.page}</div>
+          <div style="font-size:0.72rem; font-weight:600; color:var(--accent-gold); margin-bottom:2px;">PÁGINA ${r.page}</div>
           <p style="font-size:0.78rem; color:#d1d5db; line-height:1.35;">${r.snippet}</p>
         </div>
       `;
@@ -885,7 +1525,6 @@ class LuminaApp {
       const pageData = this.pages[this.currentPage - 1];
       let textToRead = pageData ? (pageData.text || '') : '';
 
-      // If text hasn't been extracted for this page yet, extract it on demand
       if (!textToRead.trim() && window.pdfEngine && window.pdfEngine.isLoaded) {
         textToRead = await window.pdfEngine.extractPageText(this.currentPage);
         if (pageData) pageData.text = textToRead;
@@ -947,7 +1586,6 @@ class LuminaApp {
         }
       }
 
-      // Ensure text is extracted for pages before packaging
       for (let i = 0; i < this.pages.length; i++) {
         const p = this.pages[i];
         if (!p.text && window.pdfEngine && window.pdfEngine.isLoaded) {

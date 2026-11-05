@@ -42,7 +42,7 @@ def run_server():
 
     url = f"http://localhost:{port}"
     print("=" * 60)
-    print("  📖 LUMINA BOOK — VISUALIZADOR Y CONVERSOR DE PDF A EBOOK")
+    print("  LUMINA BOOK - VISUALIZADOR Y CONVERSOR DE PDF A EBOOK")
     print("=" * 60)
     print(f"  Servidor iniciado en: {url}")
     print("  Directorio activo   :", DIRECTORY)
