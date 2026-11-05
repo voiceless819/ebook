@@ -46,8 +46,13 @@ class LuminaApp {
     if (savedBooks.length > 0) {
       const lastBook = await window.bookStorage.getBook(savedBooks[0].id);
       if (lastBook && lastBook.fileData) {
-        await this._loadPDFFromBuffer(lastBook.fileData, lastBook.fileName, lastBook.id, lastBook.lastPage || 1);
-        this.showToast(`Documento restaurado: ${lastBook.title}`);
+        try {
+          await this._loadPDFFromBuffer(lastBook.fileData, lastBook.fileName, lastBook.id, lastBook.lastPage || 1);
+          this.showToast(`Documento restaurado: ${lastBook.title}`);
+        } catch (restoreErr) {
+          console.warn('No se pudo restaurar el último libro, cargando manual:', restoreErr);
+          await this.loadBook(window.DEMO_BOOK);
+        }
       } else {
         await this.loadBook(window.DEMO_BOOK);
       }
@@ -744,27 +749,37 @@ class LuminaApp {
           author: 'Documento local',
           fileName: file.name,
           fileSize: file.size,
+          tags: ['General'],
           fileData: buffer.slice(0)
         });
 
-        await this._loadPDFFromBuffer(buffer, file.name, savedBook ? savedBook.id : null, 1);
+        const bookId = savedBook ? savedBook.id : null;
+        await this._loadPDFFromBuffer(buffer, file.name, bookId, 1);
         await this.refreshCatalogCount();
+        await this.renderCatalog();
+        await this._updateReadingAnalyticsSummary();
         this.showToast(`Guardado en catálogo: ${file.name}`);
       } else if (ext === 'epub') {
         const bookModel = await window.epubEngine.parseEPUB(file);
         await this.loadBook(bookModel);
+        await this.refreshCatalogCount();
+        await this.renderCatalog();
+        await this._updateReadingAnalyticsSummary();
         this.showToast(`EPUB cargado: ${bookModel.title}`);
       } else if (ext === 'txt' || ext === 'md') {
         const text = await file.text();
         const bookModel = this._parseTextDocument(text, file.name);
         await this.loadBook(bookModel);
+        await this.refreshCatalogCount();
+        await this.renderCatalog();
+        await this._updateReadingAnalyticsSummary();
         this.showToast(`Documento cargado: ${file.name}`);
       } else {
         this.showToast('Formato no soportado (.pdf, .epub, .txt, .md)', 'danger');
       }
     } catch (e) {
       console.error('Error al abrir documento:', e);
-      this.showToast(`Error al abrir documento: ${e.message}`, 'danger');
+      this.showToast(`Error al procesar documento: ${e.message}`, 'danger');
     }
   }
 
@@ -774,7 +789,7 @@ class LuminaApp {
 
     try {
       const pdfEngine = window.pdfEngine;
-      const pdfInfo = await pdfEngine.loadPDF(arrayBuffer.slice(0));
+      const pdfInfo = await pdfEngine.loadDocument(arrayBuffer.slice(0));
 
       const pagesList = [];
       for (let i = 1; i <= pdfInfo.numPages; i++) {
@@ -786,16 +801,19 @@ class LuminaApp {
         });
       }
 
+      const metaTitle = (pdfInfo.metadata && pdfInfo.metadata.title && pdfInfo.metadata.title.trim() && pdfInfo.metadata.title !== 'Documento sin título') ? pdfInfo.metadata.title.trim() : cleanTitle;
+      const metaAuthor = (pdfInfo.metadata && pdfInfo.metadata.author && pdfInfo.metadata.author.trim() && pdfInfo.metadata.author !== 'Autor Desconocido') ? pdfInfo.metadata.author.trim() : 'Documento PDF';
+
       this.currentDoc = {
-        title: cleanTitle,
-        author: 'Documento PDF',
+        title: metaTitle,
+        author: metaAuthor,
         outline: pdfInfo.outline || []
       };
       this.pages = pagesList;
       this.totalPages = pdfInfo.numPages;
       this.currentPage = Math.min(startPage || 1, this.totalPages);
 
-      this.dom.docActiveTitle.innerText = `${cleanTitle} — ${this.totalPages} págs`;
+      this.dom.docActiveTitle.innerText = `${metaTitle} — ${this.totalPages} págs`;
       this.dom.pageBadgePill.innerText = `Pág. ${this.currentPage} / ${this.totalPages}`;
       this.dom.pageScrubber.min = 1;
       this.dom.pageScrubber.max = this.totalPages;
@@ -821,11 +839,22 @@ class LuminaApp {
       this._renderNotes();
       this._updateHUDStats();
 
+      // Update totalPages & metadata in database
+      if (bookId) {
+        await window.bookStorage.updateProgress(bookId, this.currentPage, this.totalPages);
+        await window.bookStorage.updateMetadata(bookId, {
+          title: metaTitle,
+          author: metaAuthor
+        });
+      }
+
       // Generate cover thumbnail in background
       pdfEngine.renderPage(1).then(p1 => {
         if (p1 && p1.canvas && bookId) {
           const thumbUrl = p1.canvas.toDataURL('image/jpeg', 0.7);
-          window.bookStorage.updateMetadata(bookId, { coverThumbnail: thumbUrl });
+          window.bookStorage.updateMetadata(bookId, { coverThumbnail: thumbUrl }).then(() => {
+            this.renderCatalog();
+          });
         }
       }).catch(() => {});
 
@@ -839,6 +868,7 @@ class LuminaApp {
     } catch (err) {
       console.error('Error al inicializar PDF:', err);
       this.showToast(`Error al procesar PDF: ${err.message}`, 'danger');
+      throw err;
     }
   }
 
@@ -910,9 +940,25 @@ class LuminaApp {
       books = await window.bookStorage.getAllBooks(false);
     }
 
+    // Update tag chips dynamically
+    if (this.dom.catalogTagsChipRow && this.catalogTab === 'books') {
+      const allTagBooks = await window.bookStorage.getAllBooks(false);
+      const tagSet = new Set(['General', 'Estudio', 'Trabajo', 'Lectura rápida']);
+      allTagBooks.forEach(b => {
+        if (b.tags && Array.isArray(b.tags)) {
+          b.tags.forEach(t => tagSet.add(t));
+        }
+      });
+      let chipsHtml = `<span class="catalog-tag-chip ${this.catalogTagFilter === 'all' ? 'active' : ''}" data-tag="all">Todos</span>`;
+      tagSet.forEach(t => {
+        chipsHtml += `<span class="catalog-tag-chip ${this.catalogTagFilter === t ? 'active' : ''}" data-tag="${t}">${t}</span>`;
+      });
+      this.dom.catalogTagsChipRow.innerHTML = chipsHtml;
+    }
+
     // Apply tag filter
     if (this.catalogTab === 'books' && this.catalogTagFilter && this.catalogTagFilter !== 'all') {
-      books = books.filter(b => b.tags && b.tags.includes(this.catalogTagFilter));
+      books = books.filter(b => (b.tags || ['General']).includes(this.catalogTagFilter));
     }
 
     // Apply search filter (Transversal Search)

@@ -32,8 +32,12 @@ class PDFEngine {
   }
 
   /**
-   * Load PDF from ArrayBuffer or File
+   * Load PDF from ArrayBuffer or File (loadDocument or loadPDF)
    */
+  async loadPDF(dataOrFile, onProgress) {
+    return this.loadDocument(dataOrFile, onProgress);
+  }
+
   async loadDocument(dataOrFile, onProgress) {
     if (!window.pdfjsLib) {
       throw new Error('PDF.js no está disponible en la página');

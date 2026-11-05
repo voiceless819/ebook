@@ -28,32 +28,39 @@ class BookStorage {
       const request = window.indexedDB.open(this.dbName, this.dbVersion);
 
       request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        if (!db.objectStoreNames.contains(this.storeName)) {
-          const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
-          store.createIndex('addedAt', 'addedAt', { unique: false });
-          store.createIndex('lastOpenedAt', 'lastOpenedAt', { unique: false });
-          store.createIndex('deletedAt', 'deletedAt', { unique: false });
-        } else {
-          const store = request.transaction.objectStore(this.storeName);
-          if (!store.indexNames.contains('deletedAt')) {
+        try {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains(this.storeName)) {
+            const store = db.createObjectStore(this.storeName, { keyPath: 'id' });
+            store.createIndex('addedAt', 'addedAt', { unique: false });
+            store.createIndex('lastOpenedAt', 'lastOpenedAt', { unique: false });
             store.createIndex('deletedAt', 'deletedAt', { unique: false });
+          } else {
+            const tx = event.target.transaction || request.transaction;
+            if (tx) {
+              const store = tx.objectStore(this.storeName);
+              if (!store.indexNames.contains('deletedAt')) {
+                store.createIndex('deletedAt', 'deletedAt', { unique: false });
+              }
+            }
           }
-        }
 
-        if (!db.objectStoreNames.contains(this.drawingsStoreName)) {
-          db.createObjectStore(this.drawingsStoreName, { keyPath: 'id' });
-        }
+          if (!db.objectStoreNames.contains(this.drawingsStoreName)) {
+            db.createObjectStore(this.drawingsStoreName, { keyPath: 'id' });
+          }
 
-        if (!db.objectStoreNames.contains(this.statsStoreName)) {
-          db.createObjectStore(this.statsStoreName, { keyPath: 'id' });
+          if (!db.objectStoreNames.contains(this.statsStoreName)) {
+            db.createObjectStore(this.statsStoreName, { keyPath: 'id' });
+          }
+        } catch (err) {
+          console.warn('IndexedDB onupgradeneeded notice:', err);
         }
       };
 
       request.onsuccess = (event) => {
         this.db = event.target.result;
-        this.purgeOldTrash().catch(() => {});
         resolve(this.db);
+        this.purgeOldTrash().catch(() => {});
       };
 
       request.onerror = (event) => {
