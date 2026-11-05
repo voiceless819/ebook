@@ -70,7 +70,7 @@ class LuminaApp {
 
     // Register PWA Service Worker if served via HTTP/HTTPS & force update check
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('./sw.js?v=6.0').then(reg => {
+      navigator.serviceWorker.register('./sw.js?v=7.0').then(reg => {
         reg.update();
       }).catch(() => {});
     }
@@ -1732,5 +1732,5 @@ class LuminaApp {
 
 // Instantiate on DOM load
 window.addEventListener('DOMContentLoaded', () => {
-  window.luminaApp = new LuminaApp();
+  window.ebookApp = window.luminaApp = new LuminaApp();
 });

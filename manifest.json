@@ -1,6 +1,6 @@
 {
-  "name": "LuminaBook — Visualizador y Conversor de PDF a eBook",
-  "short_name": "LuminaBook",
+  "name": "Ebook4u — Visualizador y Conversor de PDF a eBook",
+  "short_name": "Ebook4u",
   "description": "Visualizador de PDF y conversor a eBook táctil, 3D y humano. Compatible con móviles, tablets y ordenadores.",
   "start_url": "./",
   "scope": "./",

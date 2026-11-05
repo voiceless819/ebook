@@ -116,7 +116,7 @@ window.DEMO_BOOK = {
       html: `
         <div class="manual-page">
           <h2>3. Opciones de Exportación</h2>
-          <p>LuminaBook incluye un empaquetador directo para transformar tus documentos PDF en formatos universales:</p>
+          <p>Ebook4u incluye un empaquetador directo para transformar tus documentos PDF en formatos universales:</p>
           
           <ul class="manual-list">
             <li><strong>EPUB 3.0:</strong> Genera un paquete estándar con portada, metadatos, tabla de contenido (NCX y Nav) y hojas de estilo optimizadas para Apple Books, Kindle y Kobo.</li>
@@ -126,7 +126,7 @@ window.DEMO_BOOK = {
           </ul>
 
           <div class="manual-footer-notice">
-            <p>Documentación técnica de LuminaBook — Versión 2.0</p>
+            <p>Documentación técnica de Ebook4u — Versión 2.0</p>
           </div>
         </div>
       `,

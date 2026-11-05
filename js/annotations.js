@@ -170,11 +170,11 @@ class BookAnnotations {
 
     switch (format.toUpperCase()) {
       case 'APA':
-        return `"${cleanQuote}" (${author}, ${currentYear}, p. ${page}).\nReferencia APA (7ª ed.): ${author}. (${currentYear}). ${title} (p. ${page}). LuminaBook Library.`;
+        return `"${cleanQuote}" (${author}, ${currentYear}, p. ${page}).\nReferencia APA (7ª ed.): ${author}. (${currentYear}). ${title} (p. ${page}). Ebook4u Library.`;
       case 'MLA':
-        return `"${cleanQuote}" (${author} ${page}).\nReferencia MLA (9ª ed.): ${author}. "${title}." LuminaBook, ${currentYear}, p. ${page}.`;
+        return `"${cleanQuote}" (${author} ${page}).\nReferencia MLA (9ª ed.): ${author}. "${title}." Ebook4u, ${currentYear}, p. ${page}.`;
       case 'CHICAGO':
-        return `"${cleanQuote}" (${author} ${currentYear}, ${page}).\nReferencia Chicago (17ª ed.): ${author}. ${currentYear}. ${title}. LuminaBook.`;
+        return `"${cleanQuote}" (${author} ${currentYear}, ${page}).\nReferencia Chicago (17ª ed.): ${author}. ${currentYear}. ${title}. Ebook4u.`;
       default:
         return `"${cleanQuote}" — ${author}, ${title} (p. ${page})`;
     }

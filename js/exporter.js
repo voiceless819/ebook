@@ -32,7 +32,7 @@ class UniversalExporter {
   exportToMarkdown(title, author, pages) {
     let md = `# ${title || 'Libro Digital'}\n`;
     if (author) md += `**Autor:** ${author}\n`;
-    md += `**Exportado desde LuminaBook:** ${new Date().toLocaleDateString()}\n\n---\n\n`;
+    md += `**Exportado desde Ebook4u:** ${new Date().toLocaleDateString()}\n\n---\n\n`;
 
     pages.forEach((page, index) => {
       const pageNum = page.pageNum || (index + 1);
@@ -202,7 +202,7 @@ class UniversalExporter {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
-  <title>${safeTitle} — LuminaBook</title>
+  <title>${safeTitle} — Ebook4u</title>
   <style>
     :root {
       --bg: #121316;

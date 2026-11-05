@@ -1,6 +1,6 @@
-# LuminaBook — Visor de PDF, Catálogo Local y Suite de Estudio
+# Ebook4u — Visor de PDF, Catálogo Local y Suite de Estudio
 
-LuminaBook es una aplicación web estática para visualizar documentos PDF, organizarlos en un **catálogo personal persistente en el navegador** y convertirlos a formato **EPUB 3.0 estándar**, **Flipbook HTML autónomo** y **Markdown**.
+Ebook4u es una aplicación web estática para visualizar documentos PDF, organizarlos en un **catálogo personal persistente en el navegador** y convertirlos a formato **EPUB 3.0 estándar**, **Flipbook HTML autónomo** y **Markdown**.
 
 Funciona 100% en el cliente (navegador), sin enviar tus archivos a ningún servidor externo.
 

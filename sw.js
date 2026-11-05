@@ -1,9 +1,9 @@
 /**
- * LuminaBook - Service Worker for Offline Reading & GitHub Pages PWA
- * Version 6.0 - Network-First for App Assets to avoid stale caches
+ * Ebook4u - Service Worker for Offline Reading & GitHub Pages PWA
+ * Version 7.0 - Network-First for App Assets to avoid stale caches
  */
 
-const CACHE_NAME = 'luminabook-cache-v6';
+const CACHE_NAME = 'ebook4u-cache-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
