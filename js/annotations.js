@@ -1,11 +1,11 @@
 /**
- * LuminaBook - Annotations, Study Tools, Academic Citations & Reading Analytics
+ * Ebook4u - Annotations, Study Tools, Academic Citations & Reading Analytics
  * Highlights in 5 pastel tones, Pin Notes at exact coordinates, Flashcards,
  * Academic Citation Formatter (APA, MLA, Chicago), Full-Text Search.
  */
 
 class BookAnnotations {
-  constructor(storageKey = 'luminabook_data') {
+  constructor(storageKey = 'ebook4u_data') {
     this.storageKey = storageKey;
     this.bookmarks = []; // { page, title, date }
     this.highlights = []; // { id, page, text, color, date }
@@ -65,8 +65,8 @@ class BookAnnotations {
       this.totalSecondsRead++;
       if (this.totalSecondsRead % 30 === 0) {
         this.saveToStorage();
-        if (window.luminaApp && window.luminaApp.currentBookId && window.bookStorage) {
-          window.bookStorage.recordReadingSeconds(window.luminaApp.currentBookId, 30);
+        if (window.ebookApp && window.ebookApp.currentBookId && window.bookStorage) {
+          window.bookStorage.recordReadingSeconds(window.ebookApp.currentBookId, 30);
         }
       }
     }, 1000);

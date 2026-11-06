@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Audio Synthesizer (Web Audio API)
+ * Ebook4u - Audio Synthesizer (Web Audio API)
  * Procedural page-turn sound and ambient reading soundscapes.
  * 100% offline, zero external audio assets required.
  */

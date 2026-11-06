@@ -1,10 +1,10 @@
 /**
- * LuminaBook - Application Orchestrator
+ * Ebook4u - Application Orchestrator
  * Integrates PDF/EPUB engines, persistent IndexedDB personal catalog, 3D flipbook,
  * continuous vertical scroll, reflow reader, study suite, gestures & ergonomics.
  */
 
-class LuminaApp {
+class EbookApp {
   constructor() {
     this.currentDoc = null;
     this.currentBookId = null;
@@ -62,7 +62,7 @@ class LuminaApp {
 
     // Restore spread mode preference
     try {
-      const savedSpread = localStorage.getItem('luminabook_spread_mode');
+      const savedSpread = localStorage.getItem('ebook4u_spread_mode');
       if (savedSpread) {
         this.setSpreadMode(savedSpread);
       }
@@ -70,7 +70,7 @@ class LuminaApp {
 
     // Register PWA Service Worker if served via HTTP/HTTPS & force update check
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('./sw.js?v=7.0').then(reg => {
+      navigator.serviceWorker.register('./sw.js?v=8.0').then(reg => {
         reg.update();
       }).catch(() => {});
     }
@@ -137,6 +137,21 @@ class LuminaApp {
       btnToolQRShare: document.getElementById('btnToolQRShare'),
       btnToolOneHand: document.getElementById('btnToolOneHand'),
       btnToolOrientation: document.getElementById('btnToolOrientation'),
+
+      // Zoom Controls
+      btnZoomIn: document.getElementById('btnZoomIn'),
+      btnZoomOut: document.getElementById('btnZoomOut'),
+      zoomLevelPill: document.getElementById('zoomLevelPill'),
+      scrubberFloatingTooltip: document.getElementById('scrubberFloatingTooltip'),
+
+      // Shortcuts Modal
+      btnShortcutsHelp: document.getElementById('btnShortcutsHelp'),
+      shortcutsModal: document.getElementById('shortcutsModal'),
+      btnCloseShortcutsModal: document.getElementById('btnCloseShortcutsModal'),
+
+      // Search Prev / Next
+      btnSearchPrev: document.getElementById('btnSearchPrev'),
+      btnSearchNext: document.getElementById('btnSearchNext'),
 
       // TTS Audio
       btnStartTTS: document.getElementById('btnStartTTS'),
@@ -485,8 +500,26 @@ class LuminaApp {
       });
     }
 
-    // 12. Search Engine
+    // 12. Search Engine & Match Navigation
     this.dom.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+    if (this.dom.btnSearchPrev) this.dom.btnSearchPrev.addEventListener('click', () => this.navigateSearchMatch(-1));
+    if (this.dom.btnSearchNext) this.dom.btnSearchNext.addEventListener('click', () => this.navigateSearchMatch(1));
+
+    // 13. Zoom Controls & Scrubber Tooltip
+    if (this.dom.btnZoomIn) this.dom.btnZoomIn.addEventListener('click', () => this.zoomIn());
+    if (this.dom.btnZoomOut) this.dom.btnZoomOut.addEventListener('click', () => this.zoomOut());
+    if (this.dom.zoomLevelPill) this.dom.zoomLevelPill.addEventListener('click', () => this.resetZoom());
+
+    if (this.dom.pageScrubber && this.dom.scrubberFloatingTooltip) {
+      this.dom.pageScrubber.addEventListener('mousemove', (e) => this._onScrubberHover(e));
+      this.dom.pageScrubber.addEventListener('mouseleave', () => {
+        this.dom.scrubberFloatingTooltip.style.display = 'none';
+      });
+    }
+
+    // 14. Shortcuts Modal
+    if (this.dom.btnShortcutsHelp) this.dom.btnShortcutsHelp.addEventListener('click', () => this.toggleShortcutsModal());
+    if (this.dom.btnCloseShortcutsModal) this.dom.btnCloseShortcutsModal.addEventListener('click', () => this.toggleShortcutsModal(false));
 
     // 13. TTS Controls
     this.dom.btnStartTTS.addEventListener('click', () => this.toggleTTS());
@@ -706,6 +739,27 @@ class LuminaApp {
         case 'h':
         case 'H':
           this.toggleHUD();
+          break;
+        case '+':
+        case '=':
+          e.preventDefault();
+          this.zoomIn();
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          this.zoomOut();
+          break;
+        case '0':
+          e.preventDefault();
+          this.resetZoom();
+          break;
+        case 'b':
+        case 'B':
+          this.toggleBookmarkCurrentPage();
+          break;
+        case '?':
+          this.toggleShortcutsModal();
           break;
         case 'Escape':
           this.closeAllDrawers();
@@ -1032,16 +1086,16 @@ class LuminaApp {
             <td>
               <div style="display:flex; gap:6px;">
                 ${this.catalogTab === 'books' ? `
-                  <button class="catalog-open-btn" onclick="window.luminaApp.openBookFromCatalog('${book.id}')">Abrir</button>
-                  <button class="catalog-open-btn" style="background:rgba(255,255,255,0.08);" title="Editar metadatos" onclick="window.luminaApp.openEditMetadataModal('${book.id}', event)">
+                  <button class="catalog-open-btn" onclick="window.ebookApp.openBookFromCatalog('${book.id}')">Abrir</button>
+                  <button class="catalog-open-btn" style="background:rgba(255,255,255,0.08);" title="Editar metadatos" onclick="window.ebookApp.openEditMetadataModal('${book.id}', event)">
                     <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                   </button>
-                  <button class="catalog-delete-btn" title="Mover a papelera" onclick="window.luminaApp.moveBookToTrash('${book.id}', event)">
+                  <button class="catalog-delete-btn" title="Mover a papelera" onclick="window.ebookApp.moveBookToTrash('${book.id}', event)">
                     <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                   </button>
                 ` : `
-                  <button class="catalog-open-btn" onclick="window.luminaApp.restoreBookFromTrash('${book.id}', event)">Restaurar</button>
-                  <button class="catalog-delete-btn" title="Eliminar definitivamente" onclick="window.luminaApp.permanentDeleteBook('${book.id}', event)">
+                  <button class="catalog-open-btn" onclick="window.ebookApp.restoreBookFromTrash('${book.id}', event)">Restaurar</button>
+                  <button class="catalog-delete-btn" title="Eliminar definitivamente" onclick="window.ebookApp.permanentDeleteBook('${book.id}', event)">
                     <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                   </button>
                 `}
@@ -1085,16 +1139,16 @@ class LuminaApp {
                 <span style="font-size: 0.74rem; color: var(--hud-subtext);">Pág. ${book.lastPage || 1} / ${book.totalPages}</span>
                 <div style="display:flex; align-items:center; gap:6px;">
                   ${this.catalogTab === 'books' ? `
-                    <button class="catalog-open-btn" onclick="window.luminaApp.openBookFromCatalog('${book.id}')">Abrir</button>
-                    <button class="catalog-open-btn" style="background:rgba(255,255,255,0.08); padding:5px;" title="Editar metadatos" onclick="window.luminaApp.openEditMetadataModal('${book.id}', event)">
+                    <button class="catalog-open-btn" onclick="window.ebookApp.openBookFromCatalog('${book.id}')">Abrir</button>
+                    <button class="catalog-open-btn" style="background:rgba(255,255,255,0.08); padding:5px;" title="Editar metadatos" onclick="window.ebookApp.openEditMetadataModal('${book.id}', event)">
                       <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                     </button>
-                    <button class="catalog-delete-btn" title="Mover a papelera" onclick="window.luminaApp.moveBookToTrash('${book.id}', event)">
+                    <button class="catalog-delete-btn" title="Mover a papelera" onclick="window.ebookApp.moveBookToTrash('${book.id}', event)">
                       <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                   ` : `
-                    <button class="catalog-open-btn" onclick="window.luminaApp.restoreBookFromTrash('${book.id}', event)">Restaurar</button>
-                    <button class="catalog-delete-btn" title="Eliminar definitivamente" onclick="window.luminaApp.permanentDeleteBook('${book.id}', event)">
+                    <button class="catalog-open-btn" onclick="window.ebookApp.restoreBookFromTrash('${book.id}', event)">Restaurar</button>
+                    <button class="catalog-delete-btn" title="Eliminar definitivamente" onclick="window.ebookApp.permanentDeleteBook('${book.id}', event)">
                       <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                     </button>
                   `}
@@ -1203,7 +1257,7 @@ class LuminaApp {
     }
     this.flipbook.setSpread(mode);
     try {
-      localStorage.setItem('luminabook_spread_mode', mode);
+      localStorage.setItem('ebook4u_spread_mode', mode);
     } catch (e) {}
     this.showToast(mode === 'single' ? 'Vista: 1 página' : 'Vista: 2 páginas');
   }
@@ -1458,6 +1512,78 @@ class LuminaApp {
     });
   }
 
+
+  // --- Zoom & Pan Controller ---
+  zoomIn() {
+    if (this.flipbook) {
+      const nextZoom = Math.min(3.0, Math.round((this.flipbook.zoomLevel + 0.25) * 100) / 100);
+      this.setZoom(nextZoom);
+    }
+  }
+
+  zoomOut() {
+    if (this.flipbook) {
+      const nextZoom = Math.max(1.0, Math.round((this.flipbook.zoomLevel - 0.25) * 100) / 100);
+      this.setZoom(nextZoom);
+    }
+  }
+
+  resetZoom() {
+    this.setZoom(1.0);
+  }
+
+  setZoom(val) {
+    if (this.flipbook) {
+      this.flipbook.setZoom(val);
+      this.onZoomChanged(this.flipbook.zoomLevel);
+    }
+  }
+
+  onZoomChanged(val) {
+    if (this.dom.zoomLevelPill) {
+      this.dom.zoomLevelPill.innerText = `${Math.round(val * 100)}%`;
+      if (val > 1.0) {
+        this.dom.zoomLevelPill.classList.add('zoomed-active');
+      } else {
+        this.dom.zoomLevelPill.classList.remove('zoomed-active');
+      }
+    }
+  }
+
+  _onScrubberHover(e) {
+    if (!this.dom.scrubberFloatingTooltip || !this.dom.pageScrubber) return;
+    const rect = this.dom.pageScrubber.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const page = Math.max(1, Math.min(this.totalPages, Math.round(pct * (this.totalPages - 1)) + 1));
+    const title = (this.pages[page - 1] && this.pages[page - 1].title) ? this.pages[page - 1].title : `Pág. ${page}`;
+    this.dom.scrubberFloatingTooltip.innerText = `Pág. ${page} / ${this.totalPages} — ${title}`;
+    this.dom.scrubberFloatingTooltip.style.left = `${Math.round(pct * 100)}%`;
+    this.dom.scrubberFloatingTooltip.style.display = 'block';
+  }
+
+  toggleShortcutsModal(forceState = null) {
+    if (!this.dom.shortcutsModal) return;
+    const isOpen = forceState !== null ? forceState : (this.dom.shortcutsModal.style.display !== 'flex');
+    this.dom.shortcutsModal.style.display = isOpen ? 'flex' : 'none';
+  }
+
+  toggleBookmarkCurrentPage() {
+    this.toggleCurrentBookmark();
+  }
+
+  navigateSearchMatch(direction = 1) {
+    if (!this.searchMatches || this.searchMatches.length === 0) {
+      this.showToast('No hay resultados de búsqueda para navegar', 'info');
+      return;
+    }
+    this.currentSearchMatchIndex = (this.currentSearchMatchIndex + direction + this.searchMatches.length) % this.searchMatches.length;
+    const targetMatch = this.searchMatches[this.currentSearchMatchIndex];
+    if (targetMatch) {
+      this.goToPage(targetMatch.page);
+      this.showToast(`Coincidencia ${this.currentSearchMatchIndex + 1} de ${this.searchMatches.length} (Pág. ${targetMatch.page})`);
+    }
+  }
+
   // --- Bookmarks & Notes ---
   toggleCurrentBookmark() {
     const added = window.bookAnnotations.toggleBookmark(this.currentPage, `Página ${this.currentPage}`);
@@ -1477,12 +1603,12 @@ class LuminaApp {
     let html = '';
     bookmarks.forEach(bm => {
       html += `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:4px; margin-bottom:5px; cursor:pointer;" onclick="window.luminaApp.goToPage(${bm.page}); window.luminaApp.closeAllDrawers();">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:4px; margin-bottom:5px; cursor:pointer;" onclick="window.ebookApp.goToPage(${bm.page}); window.ebookApp.closeAllDrawers();">
           <div>
             <div style="font-weight:600; font-size:0.82rem; color:#fff;">Página ${bm.page}</div>
             <div style="font-size:0.72rem; color:var(--hud-subtext);">${bm.date}</div>
           </div>
-          <button style="background:transparent; border:none; color:#ef4444; font-size:0.8rem; cursor:pointer;" onclick="event.stopPropagation(); window.luminaApp.removeBookmark(${bm.page});">Eliminar</button>
+          <button style="background:transparent; border:none; color:#ef4444; font-size:0.8rem; cursor:pointer;" onclick="event.stopPropagation(); window.ebookApp.removeBookmark(${bm.page});">Eliminar</button>
         </div>
       `;
     });
@@ -1561,7 +1687,7 @@ class LuminaApp {
     let html = '';
     results.slice(0, 30).forEach(r => {
       html += `
-        <div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:4px; margin-bottom:6px; cursor:pointer;" onclick="window.luminaApp.goToPage(${r.page}); window.luminaApp.closeAllDrawers();">
+        <div style="padding:8px 10px; background:rgba(255,255,255,0.03); border-radius:4px; margin-bottom:6px; cursor:pointer;" onclick="window.ebookApp.goToPage(${r.page}); window.ebookApp.closeAllDrawers();">
           <div style="font-size:0.72rem; font-weight:600; color:var(--accent-gold); margin-bottom:2px;">PÁGINA ${r.page}</div>
           <p style="font-size:0.78rem; color:#d1d5db; line-height:1.35;">${r.snippet}</p>
         </div>
@@ -1732,5 +1858,5 @@ class LuminaApp {
 
 // Instantiate on DOM load
 window.addEventListener('DOMContentLoaded', () => {
-  window.ebookApp = window.luminaApp = new LuminaApp();
+  window.ebookApp = window.ebookApp = new EbookApp();
 });

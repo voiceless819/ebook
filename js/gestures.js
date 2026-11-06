@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Touch Gestures & Multi-Touch Experience Engine
+ * Ebook4u - Touch Gestures & Multi-Touch Experience Engine
  * Touch swipe, pinch-to-zoom, edge taps, HUD auto-hide,
  * 2-finger tap to go back, and 3-finger tap to reset zoom.
  */

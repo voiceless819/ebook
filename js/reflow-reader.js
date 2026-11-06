@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Dynamic Liquid Reflow eBook Reader
+ * Ebook4u - Dynamic Liquid Reflow eBook Reader
  * Reflowable typography, Bionic Reading cognitive engine, customizable fonts, themes & layout.
  */
 

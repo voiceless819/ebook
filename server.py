@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LuminaBook — Servidor Local y Lanzador
+Ebook4u — Servidor Local y Lanzador
 Inicia un servidor HTTP local y abre automáticamente la aplicación en el navegador predeterminado.
 """
 
@@ -42,7 +42,7 @@ def run_server():
 
     url = f"http://localhost:{port}"
     print("=" * 60)
-    print("  LUMINA BOOK - VISUALIZADOR Y CONVERSOR DE PDF A EBOOK")
+    print("  EBOOK4U - VISUALIZADOR Y CONVERSOR DE PDF A EBOOK")
     print("=" * 60)
     print(f"  Servidor iniciado en: {url}")
     print("  Directorio activo   :", DIRECTORY)

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Ebook4u — Visor de PDF, Catálogo Personal y Estudio</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="css/styles.css?v=7.0">
+  <link rel="stylesheet" href="css/styles.css?v=8.0">
 </head>
 <body class="theme-dark">
   <div id="appRoot">
@@ -255,15 +255,33 @@
     <!-- BOTTOM TOOLBAR HUD -->
     <footer class="app-bottom-hud" id="appBottomHud">
       <div class="hud-group-left">
-        <button class="action-btn icon-only" id="btnPrevPage" title="Página anterior">
+        <button class="action-btn icon-only" id="btnPrevPage" title="Página anterior [←]">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
         </button>
         <div class="page-badge-pill" id="pageBadgePill">Pág. 1 / 1</div>
+        <button class="action-btn icon-only" id="btnNextPage" title="Página siguiente [→]">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+
+        <!-- Dynamic Zoom Controls -->
+        <div class="hud-zoom-controls" id="hudZoomControls">
+          <button class="action-btn icon-only" id="btnZoomOut" title="Reducir zoom [Ctrl -]">
+            <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <button class="zoom-level-pill" id="zoomLevelPill" title="Restablecer zoom a 100% [0]">100%</button>
+          <button class="action-btn icon-only" id="btnZoomIn" title="Aumentar zoom [Ctrl +]">
+            <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
       </div>
 
       <div class="hud-scrubber-center">
+        <!-- Floating scrubber hover tooltip -->
+        <div class="scrubber-floating-tooltip" id="scrubberFloatingTooltip" style="display:none;">Pág. 1</div>
         <input type="range" class="page-scrubber" id="pageScrubber" min="1" max="1" value="1" title="Navegar por el documento">
         <span class="reading-stat-label" id="readingStatLabel">Progreso: 0%</span>
       </div>
@@ -319,22 +337,24 @@
           </div>
         </div>
 
-        <button class="action-btn icon-only" id="btnBookmarkToggle" title="Añadir a marcadores">
+        <button class="action-btn icon-only" id="btnBookmarkToggle" title="Marcar página actual [B]">
           <span id="bookmarkStarIcon">
             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
               <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
             </svg>
           </span>
         </button>
-        <button class="action-btn icon-only" id="btnStartTTS" title="Lectura en voz alta">
+        <button class="action-btn icon-only" id="btnStartTTS" title="Lectura en voz alta [T]">
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
           </svg>
         </button>
-        <button class="action-btn icon-only" id="btnNextPage" title="Página siguiente">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
+        <button class="action-btn icon-only" id="btnShortcutsHelp" title="Atajos de teclado y ayuda [?]">
+          <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
           </svg>
         </button>
       </div>
@@ -466,8 +486,10 @@
         </button>
       </div>
       <div class="drawer-body">
-        <div style="margin-bottom: 14px;">
-          <input type="search" id="searchInput" placeholder="Escribe un término..." class="search-input-field">
+        <div style="margin-bottom: 12px; display:flex; gap:6px;">
+          <input type="search" id="searchInput" placeholder="Escribe un término..." class="search-input-field" style="flex:1;">
+          <button class="action-btn icon-only" id="btnSearchPrev" title="Coincidencia anterior" style="padding:6px 10px;">↑</button>
+          <button class="action-btn icon-only" id="btnSearchNext" title="Coincidencia siguiente" style="padding:6px 10px;">↓</button>
         </div>
         <div id="searchResultsCount" style="font-size: 0.78rem; color: var(--hud-subtext); margin-bottom: 10px;"></div>
         <div id="searchResultsContainer"></div>
@@ -757,6 +779,52 @@
       </div>
     </div>
 
+    <!-- KEYBOARD SHORTCUTS GUIDE MODAL -->
+    <div class="metadata-edit-modal" id="shortcutsModal" style="display:none;">
+      <div class="meta-modal-box shortcuts-modal-box">
+        <div class="meta-modal-header">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <h3>Guía de Atajos de Teclado</h3>
+          </div>
+          <button class="action-btn icon-only" id="btnCloseShortcutsModal">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="shortcuts-modal-body">
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">Navegación</div>
+            <div class="shortcut-row"><span>Página siguiente</span><span class="keycap">→</span> <span class="keycap">Espacio</span></div>
+            <div class="shortcut-row"><span>Página anterior</span><span class="keycap">←</span></div>
+            <div class="shortcut-row"><span>Primera / Última</span><span class="keycap">Inicio</span> / <span class="keycap">Fin</span></div>
+          </div>
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">Visualización & Zoom</div>
+            <div class="shortcut-row"><span>Acercar / Alejar zoom</span><span class="keycap">+</span> / <span class="keycap">-</span></div>
+            <div class="shortcut-row"><span>Restablecer zoom</span><span class="keycap">0</span></div>
+            <div class="shortcut-row"><span>Pantalla completa</span><span class="keycap">F</span></div>
+            <div class="shortcut-row"><span>Modo Zen (Solo Libro)</span><span class="keycap">Z</span></div>
+            <div class="shortcut-row"><span>Vista 1 / 2 páginas</span><span class="keycap">1</span> / <span class="keycap">2</span></div>
+            <div class="shortcut-row"><span>Cuadrícula de páginas</span><span class="keycap">G</span></div>
+            <div class="shortcut-row"><span>Scroll continuo</span><span class="keycap">S</span></div>
+          </div>
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">Estudio & Acciones</div>
+            <div class="shortcut-row"><span>Añadir/quitar marcador</span><span class="keycap">B</span></div>
+            <div class="shortcut-row"><span>Dibujo a mano alzada</span><span class="keycap">D</span></div>
+            <div class="shortcut-row"><span>Lupa de aumento</span><span class="keycap">L</span></div>
+            <div class="shortcut-row"><span>Regla de lectura</span><span class="keycap">R</span></div>
+            <div class="shortcut-row"><span>Lectura en voz alta</span><span class="keycap">T</span></div>
+            <div class="shortcut-row"><span>Cerrar paneles / Menú</span><span class="keycap">Esc</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- TOAST NOTIFICATIONS -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -767,21 +835,21 @@
   <script src="vendor/pdf.min.js"></script>
 
   <!-- APPLICATION MODULES -->
-  <script src="js/storage.js?v=7.0"></script>
-  <script src="js/audio.js?v=7.0"></script>
-  <script src="js/tts.js?v=7.0"></script>
-  <script src="js/pdf-engine.js?v=7.0"></script>
-  <script src="js/epub-engine.js?v=7.0"></script>
-  <script src="js/exporter.js?v=7.0"></script>
-  <script src="js/flipbook.js?v=7.0"></script>
-  <script src="js/reflow-reader.js?v=7.0"></script>
-  <script src="js/gestures.js?v=7.0"></script>
-  <script src="js/annotations.js?v=7.0"></script>
-  <script src="js/drawing.js?v=7.0"></script>
-  <script src="js/study-tools.js?v=7.0"></script>
-  <script src="js/cover-generator.js?v=7.0"></script>
-  <script src="js/quick-share.js?v=7.0"></script>
-  <script src="js/demo-book.js?v=7.0"></script>
-  <script src="js/app.js?v=7.0"></script>
+  <script src="js/storage.js?v=8.0"></script>
+  <script src="js/audio.js?v=8.0"></script>
+  <script src="js/tts.js?v=8.0"></script>
+  <script src="js/pdf-engine.js?v=8.0"></script>
+  <script src="js/epub-engine.js?v=8.0"></script>
+  <script src="js/exporter.js?v=8.0"></script>
+  <script src="js/flipbook.js?v=8.0"></script>
+  <script src="js/reflow-reader.js?v=8.0"></script>
+  <script src="js/gestures.js?v=8.0"></script>
+  <script src="js/annotations.js?v=8.0"></script>
+  <script src="js/drawing.js?v=8.0"></script>
+  <script src="js/study-tools.js?v=8.0"></script>
+  <script src="js/cover-generator.js?v=8.0"></script>
+  <script src="js/quick-share.js?v=8.0"></script>
+  <script src="js/demo-book.js?v=8.0"></script>
+  <script src="js/app.js?v=8.0"></script>
 </body>
 </html>

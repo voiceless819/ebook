@@ -1,5 +1,5 @@
 /**
- * LuminaBook - PDF Processing Engine
+ * Ebook4u - PDF Processing Engine
  * Robust lazy rasterization, structured text extraction, TOC outline & metadata parsing.
  */
 

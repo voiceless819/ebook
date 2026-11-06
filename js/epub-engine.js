@@ -1,5 +1,5 @@
 /**
- * LuminaBook - EPUB Engine (EPUB 3.0 Packager & Importer)
+ * Ebook4u - EPUB Engine (EPUB 3.0 Packager & Importer)
  * Uses JSZip to create fully compliant, standard EPUB 3.0 eBooks and to import existing EPUB files.
  */
 

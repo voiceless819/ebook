@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Universal Exporter Suite
+ * Ebook4u - Universal Exporter Suite
  * Exports books to Standalone Self-Contained HTML Flipbook, Markdown, Plain Text, Annotations & Image Zip.
  */
 

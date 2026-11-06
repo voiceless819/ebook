@@ -1,4 +1,4 @@
-name: Deploy LuminaBook to GitHub Pages
+name: Deploy Ebook4u to GitHub Pages
 
 on:
   push:

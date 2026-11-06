@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Local Storage & IndexedDB Personal Catalog
+ * Ebook4u - Local Storage & IndexedDB Personal Catalog
  * Stores PDFs, reading progress, collections/tags, annotations, drawings,
  * recycle bin and thumbnails locally in browser.
  * Persistent, offline, unlimited capacity (hundreds of MBs).

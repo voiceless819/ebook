@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Study Tools & Visual Aids
+ * Ebook4u - Study Tools & Visual Aids
  * Reading Ruler, Magnifier Glass, Grid Overview Modal, Flashcards Review,
  * Non-consecutive Page Comparator, and Slideshow Presentation Mode.
  */
@@ -51,8 +51,8 @@ class StudyTools {
     if (this.rulerEl) {
       this.rulerEl.style.display = this.rulerActive ? 'block' : 'none';
     }
-    if (window.luminaApp && window.luminaApp.showToast) {
-      window.luminaApp.showToast(this.rulerActive ? 'Regla de lectura activada' : 'Regla de lectura desactivada');
+    if (window.ebookApp && window.ebookApp.showToast) {
+      window.ebookApp.showToast(this.rulerActive ? 'Regla de lectura activada' : 'Regla de lectura desactivada');
     }
     return this.rulerActive;
   }
@@ -63,8 +63,8 @@ class StudyTools {
     if (this.magnifierEl) {
       this.magnifierEl.style.display = this.magnifierActive ? 'block' : 'none';
     }
-    if (window.luminaApp && window.luminaApp.showToast) {
-      window.luminaApp.showToast(this.magnifierActive ? 'Lupa de aumento activada' : 'Lupa de aumento desactivada');
+    if (window.ebookApp && window.ebookApp.showToast) {
+      window.ebookApp.showToast(this.magnifierActive ? 'Lupa de aumento activada' : 'Lupa de aumento desactivada');
     }
     return this.magnifierActive;
   }
@@ -145,8 +145,8 @@ class StudyTools {
     const container = modal.querySelector('#gridCardsContainer');
     container.innerHTML = '';
 
-    const totalPages = (window.luminaApp && window.luminaApp.pages) ? window.luminaApp.pages.length : 1;
-    const curPage = window.luminaApp ? window.luminaApp.currentPage : 1;
+    const totalPages = (window.ebookApp && window.ebookApp.pages) ? window.ebookApp.pages.length : 1;
+    const curPage = window.ebookApp ? window.ebookApp.currentPage : 1;
 
     for (let p = 1; p <= totalPages; p++) {
       const card = document.createElement('div');
@@ -159,7 +159,7 @@ class StudyTools {
       `;
 
       card.addEventListener('click', () => {
-        if (window.luminaApp) window.luminaApp.goToPage(p);
+        if (window.ebookApp) window.ebookApp.goToPage(p);
         modal.classList.remove('open');
       });
 
@@ -190,8 +190,8 @@ class StudyTools {
                   slot.appendChild(c);
                 }
               }).catch(() => {});
-            } else if (window.luminaApp && window.luminaApp.pages[pageNum - 1]) {
-              const pData = window.luminaApp.pages[pageNum - 1];
+            } else if (window.ebookApp && window.ebookApp.pages[pageNum - 1]) {
+              const pData = window.ebookApp.pages[pageNum - 1];
               slot.innerHTML = `<div style="font-size:8px; padding:4px; line-height:1.2; color:#bbb; overflow:hidden; max-height:100%;">${pData.title || ''} ${pData.text ? pData.text.substring(0, 80) : ''}</div>`;
             }
           }
@@ -251,8 +251,8 @@ class StudyTools {
 
     const list = sidebar.querySelector('#sidebarThumbList');
     list.innerHTML = '';
-    const total = window.luminaApp && window.luminaApp.pages ? window.luminaApp.pages.length : 1;
-    const curPage = window.luminaApp ? window.luminaApp.currentPage : 1;
+    const total = window.ebookApp && window.ebookApp.pages ? window.ebookApp.pages.length : 1;
+    const curPage = window.ebookApp ? window.ebookApp.currentPage : 1;
 
     for (let p = 1; p <= total; p++) {
       const item = document.createElement('div');
@@ -264,7 +264,7 @@ class StudyTools {
       `;
 
       item.addEventListener('click', () => {
-        if (window.luminaApp) window.luminaApp.goToPage(p);
+        if (window.ebookApp) window.ebookApp.goToPage(p);
       });
 
       list.appendChild(item);
@@ -298,8 +298,8 @@ class StudyTools {
 
   startSlideshow() {
     this.slideshowActive = true;
-    if (window.luminaApp && window.luminaApp.showToast) {
-      window.luminaApp.showToast(`Presentación iniciada (avance cada ${this.slideshowInterval}s)`);
+    if (window.ebookApp && window.ebookApp.showToast) {
+      window.ebookApp.showToast(`Presentación iniciada (avance cada ${this.slideshowInterval}s)`);
     }
 
     let hudBtn = document.getElementById('btnSlideshowToggle');
@@ -307,12 +307,12 @@ class StudyTools {
 
     clearInterval(this.slideshowTimer);
     this.slideshowTimer = setInterval(() => {
-      if (window.luminaApp) {
-        if (window.luminaApp.currentPage >= window.luminaApp.totalPages) {
+      if (window.ebookApp) {
+        if (window.ebookApp.currentPage >= window.ebookApp.totalPages) {
           this.stopSlideshow();
-          window.luminaApp.showToast('Fin de la presentación');
+          window.ebookApp.showToast('Fin de la presentación');
         } else {
-          window.luminaApp.nextPage();
+          window.ebookApp.nextPage();
         }
       }
     }, this.slideshowInterval * 1000);
@@ -323,8 +323,8 @@ class StudyTools {
     clearInterval(this.slideshowTimer);
     let hudBtn = document.getElementById('btnSlideshowToggle');
     if (hudBtn) hudBtn.classList.remove('active-action');
-    if (window.luminaApp && window.luminaApp.showToast) {
-      window.luminaApp.showToast('Presentación pausada');
+    if (window.ebookApp && window.ebookApp.showToast) {
+      window.ebookApp.showToast('Presentación pausada');
     }
   }
 
@@ -381,8 +381,8 @@ class StudyTools {
       rightInput.addEventListener('change', () => this._renderComparatorSlot('right', parseInt(rightInput.value) || 1));
     }
 
-    const curPage = window.luminaApp ? window.luminaApp.currentPage : 1;
-    const total = window.luminaApp ? window.luminaApp.totalPages : 1;
+    const curPage = window.ebookApp ? window.ebookApp.currentPage : 1;
+    const total = window.ebookApp ? window.ebookApp.totalPages : 1;
     const compLeftInput = modal.querySelector('#compLeftPageInput');
     const compRightInput = modal.querySelector('#compRightPageInput');
 
@@ -418,8 +418,8 @@ class StudyTools {
       }).catch(() => {
         slot.innerHTML = '<div style="color:#e74c3c;">Error al cargar página</div>';
       });
-    } else if (window.luminaApp && window.luminaApp.pages[pageNum - 1]) {
-      const p = window.luminaApp.pages[pageNum - 1];
+    } else if (window.ebookApp && window.ebookApp.pages[pageNum - 1]) {
+      const p = window.ebookApp.pages[pageNum - 1];
       slot.innerHTML = `<div style="padding:16px; overflow:auto; max-height:100%; color:#eee;"><h3>${p.title || ''}</h3><p>${p.text || ''}</p></div>`;
     }
   }

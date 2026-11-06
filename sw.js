@@ -1,9 +1,9 @@
 /**
  * Ebook4u - Service Worker for Offline Reading & GitHub Pages PWA
- * Version 7.0 - Network-First for App Assets to avoid stale caches
+ * Version 8.0 - Network-First for App Assets to avoid stale caches
  */
 
-const CACHE_NAME = 'ebook4u-cache-v7';
+const CACHE_NAME = 'ebook4u-cache-v8';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

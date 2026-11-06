@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Text-To-Speech (TTS / Audiolibro Dinámico)
+ * Ebook4u - Text-To-Speech (TTS / Audiolibro Dinámico)
  * Human-like voice reading with speed control, auto-page-turn, and real-time sentence tracking.
  */
 

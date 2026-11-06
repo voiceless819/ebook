@@ -1,5 +1,5 @@
 /**
- * LuminaBook - EPUB & Document Cover Generator
+ * Ebook4u - EPUB & Document Cover Generator
  * 4 clean, serious and sober templates for documents without cover art.
  * Generates high-res cover canvases, saves to catalog & attaches to EPUB exports.
  */
@@ -74,8 +74,8 @@ class CoverGenerator {
 
     const titleInput = modal.querySelector('#coverGenTitleInput');
     const authorInput = modal.querySelector('#coverGenAuthorInput');
-    titleInput.value = defaultTitle || (window.luminaApp ? window.luminaApp.currentDoc?.title : '') || 'Documento sin título';
-    authorInput.value = defaultAuthor || (window.luminaApp ? window.luminaApp.currentDoc?.author : '') || 'Autor Desconocido';
+    titleInput.value = defaultTitle || (window.ebookApp ? window.ebookApp.currentDoc?.title : '') || 'Documento sin título';
+    authorInput.value = defaultAuthor || (window.ebookApp ? window.ebookApp.currentDoc?.author : '') || 'Autor Desconocido';
 
     this.selectedTemplateId = 'minimalist';
     this.renderTemplateSelector();
@@ -88,14 +88,14 @@ class CoverGenerator {
       const canvas = modal.querySelector('#coverGenCanvas');
       const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-      if (window.luminaApp && window.luminaApp.currentBookId && window.bookStorage) {
-        window.bookStorage.updateMetadata(window.luminaApp.currentBookId, {
+      if (window.ebookApp && window.ebookApp.currentBookId && window.bookStorage) {
+        window.bookStorage.updateMetadata(window.ebookApp.currentBookId, {
           title: titleInput.value,
           author: authorInput.value,
           coverThumbnail: dataUrl
         }).then(() => {
-          if (window.luminaApp.refreshCatalogList) window.luminaApp.refreshCatalogList();
-          window.luminaApp.showToast('Portada actualizada con éxito');
+          if (window.ebookApp.refreshCatalogList) window.ebookApp.refreshCatalogList();
+          window.ebookApp.showToast('Portada actualizada con éxito');
         });
       }
 

@@ -1,7 +1,7 @@
 @echo off
-title LuminaBook - Visor y Conversor 3D de PDF a eBook
+title Ebook4u - Visor y Conversor 3D de PDF a eBook
 echo ========================================================
-echo   Iniciando LuminaBook...
+echo   Iniciando Ebook4u...
 echo ========================================================
 python server.py
 if %ERRORLEVEL% NEQ 0 (

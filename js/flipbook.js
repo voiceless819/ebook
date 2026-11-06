@@ -1,5 +1,5 @@
 /**
- * LuminaBook - 3D Realistic Flipbook Core Engine
+ * Ebook4u - 3D Realistic Flipbook Core Engine
  * Dual-page spread, single-page mode, bi-directional 3D page flip,
  * dynamic spine & page stack thickness, gyroscope-reactive shadows,
  * and real-time interactive corner drag.
@@ -23,10 +23,16 @@ class FlipbookCore {
     this.dragStartX = 0;
     this.dragProgress = 0;
     this.zoomLevel = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.isPanning = false;
+    this.panStartX = 0;
+    this.panStartY = 0;
 
     this.initDOM();
     this.initInteractiveCornerDrag();
     this.initGyroscopeShadows();
+    this.initZoomAndPan();
 
     window.addEventListener('resize', () => this.handleResize());
   }
@@ -381,7 +387,7 @@ class FlipbookCore {
     this.updateLayout();
 
     // Trigger drawing layer refresh if drawing controller is active
-    if (window.drawingController && window.luminaApp && window.luminaApp.currentBookId) {
+    if (window.drawingController && window.ebookApp && window.ebookApp.currentBookId) {
       window.drawingController.attachToSlot(this.rightSlot, this.currentPage);
     }
 
@@ -512,6 +518,25 @@ class FlipbookCore {
       footerStamp.className = 'page-footer-stamp';
       footerStamp.innerHTML = `<span>— ${pageNum} —</span>`;
       contentDiv.appendChild(footerStamp);
+    }
+
+        // Ribbon bookmark indicator on active page sheet
+    if (window.bookAnnotations && window.bookAnnotations.isBookmarked && window.bookAnnotations.isBookmarked(pageNum)) {
+      const ribbon = document.createElement('div');
+      ribbon.className = 'book-ribbon-marker';
+      ribbon.title = 'Página marcada (Clic para desmarcar)';
+      ribbon.innerHTML = `
+        <svg viewBox="0 0 24 38" width="24" height="38" fill="none">
+          <path d="M0 0 H24 V38 L12 28 L0 38 Z" fill="#d97706"/>
+        </svg>
+      `;
+      ribbon.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.ebookApp) {
+          window.ebookApp.toggleBookmarkCurrentPage();
+        }
+      });
+      contentDiv.appendChild(ribbon);
     }
 
     targetEl.appendChild(contentDiv);
@@ -652,14 +677,86 @@ class FlipbookCore {
     }, duration);
   }
 
+  initZoomAndPan() {
+    const stage = document.getElementById('flipbookStage') || this.container;
+    const workspace = document.getElementById('readerWorkspace') || document.body;
+
+    stage.addEventListener('pointerdown', (e) => {
+      if (this.zoomLevel <= 1.0) return;
+      if (e.target.closest('button, input, select, .book-ribbon-marker, .page-sticky-pin, .corner-curl-hint')) return;
+      this.isPanning = true;
+      this.panStartX = e.clientX - this.panX;
+      this.panStartY = e.clientY - this.panY;
+      workspace.classList.add('is-panning');
+      try { stage.setPointerCapture(e.pointerId); } catch(err) {}
+    });
+
+    stage.addEventListener('pointermove', (e) => {
+      if (!this.isPanning) return;
+      this.panX = e.clientX - this.panStartX;
+      this.panY = e.clientY - this.panStartY;
+      this._updateTransform();
+    });
+
+    const stopPan = () => {
+      if (this.isPanning) {
+        this.isPanning = false;
+        workspace.classList.remove('is-panning');
+      }
+    };
+    stage.addEventListener('pointerup', stopPan);
+    stage.addEventListener('pointercancel', stopPan);
+
+    stage.addEventListener('dblclick', (e) => {
+      if (e.target.closest('button, input, select, .book-ribbon-marker, .page-sticky-pin, .corner-curl-hint')) return;
+      if (this.zoomLevel > 1.0) {
+        this.resetZoom();
+      } else {
+        this.setZoom(1.5);
+      }
+    });
+
+    stage.addEventListener('wheel', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.2 : -0.2;
+        this.setZoom(this.zoomLevel + delta);
+      }
+    }, { passive: false });
+  }
+
   setZoom(zoom) {
-    this.zoomLevel = Math.max(0.8, Math.min(2.5, zoom));
-    this.wrapper.style.transform = `scale(${this.zoomLevel})`;
+    this.zoomLevel = Math.max(1.0, Math.min(3.0, Math.round(zoom * 100) / 100));
+    const workspace = document.getElementById('readerWorkspace');
+    if (workspace) {
+      if (this.zoomLevel > 1.0) workspace.classList.add('is-zoomed');
+      else workspace.classList.remove('is-zoomed');
+    }
+    this._updateTransform();
+    if (window.ebookApp && window.ebookApp.onZoomChanged) {
+      window.ebookApp.onZoomChanged(this.zoomLevel);
+    }
   }
 
   resetZoom() {
-    this.zoomLevel = 1.0;
-    this.wrapper.style.transform = 'scale(1)';
+    this.panX = 0;
+    this.panY = 0;
+    this.setZoom(1.0);
+  }
+
+  _updateTransform() {
+    if (!this.wrapper) return;
+    if (this.zoomLevel <= 1.0) {
+      this.panX = 0;
+      this.panY = 0;
+      this.wrapper.style.transform = '';
+      return;
+    }
+    const maxPanX = (this.wrapper.offsetWidth * (this.zoomLevel - 1)) / 1.7;
+    const maxPanY = (this.wrapper.offsetHeight * (this.zoomLevel - 1)) / 1.7;
+    this.panX = Math.max(-maxPanX, Math.min(maxPanX, this.panX));
+    this.panY = Math.max(-maxPanY, Math.min(maxPanY, this.panY));
+    this.wrapper.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoomLevel})`;
   }
 }
 

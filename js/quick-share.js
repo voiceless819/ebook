@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Quick Sharing, One-Hand Navigation & Ergonomics Engine
+ * Ebook4u - Quick Sharing, One-Hand Navigation & Ergonomics Engine
  * Pure-JS QR Code generation, Haptics, Orientation Lock, Local Font Loader,
  * One-Hand Mobile Thumb Dock & Ink-Saving Print Mode.
  */
@@ -54,7 +54,7 @@ class QuickShare {
       modal.querySelector('#btnCloseQRShare').addEventListener('click', () => modal.classList.remove('open'));
     }
 
-    const curPage = window.luminaApp ? window.luminaApp.currentPage : 1;
+    const curPage = window.ebookApp ? window.ebookApp.currentPage : 1;
     let targetUrl = url || window.location.href.split('#')[0].split('?')[0];
     targetUrl += `?page=${curPage}`;
 
@@ -158,21 +158,21 @@ class QuickShare {
           const type = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
           await window.screen.orientation.lock(type);
           this.orientationLocked = true;
-          if (window.luminaApp) window.luminaApp.showToast(`Orientación fijada en ${type}`);
+          if (window.ebookApp) window.ebookApp.showToast(`Orientación fijada en ${type}`);
         } else {
           window.screen.orientation.unlock();
           this.orientationLocked = false;
-          if (window.luminaApp) window.luminaApp.showToast('Orientación libre');
+          if (window.ebookApp) window.ebookApp.showToast('Orientación libre');
         }
       } else {
         // Fallback for browsers without screen.orientation.lock
         this.orientationLocked = !this.orientationLocked;
-        if (window.luminaApp) {
-          window.luminaApp.showToast(this.orientationLocked ? 'Orientación bloqueada por software' : 'Orientación desbloqueada');
+        if (window.ebookApp) {
+          window.ebookApp.showToast(this.orientationLocked ? 'Orientación bloqueada por software' : 'Orientación desbloqueada');
         }
       }
     } catch (e) {
-      if (window.luminaApp) window.luminaApp.showToast('Bloqueo de orientación no soportado por este navegador');
+      if (window.ebookApp) window.ebookApp.showToast('Bloqueo de orientación no soportado por este navegador');
     }
   }
 
@@ -202,12 +202,12 @@ class QuickShare {
 
     dock.querySelector('#btnThumbPrev').addEventListener('click', () => {
       this.vibrate(15);
-      if (window.luminaApp) window.luminaApp.prevPage();
+      if (window.ebookApp) window.ebookApp.prevPage();
     });
 
     dock.querySelector('#btnThumbNext').addEventListener('click', () => {
       this.vibrate(15);
-      if (window.luminaApp) window.luminaApp.nextPage();
+      if (window.ebookApp) window.ebookApp.nextPage();
     });
   }
 
@@ -215,8 +215,8 @@ class QuickShare {
     this.oneHandActive = force !== null ? force : !this.oneHandActive;
     const dock = document.getElementById('oneHandThumbDock');
     if (dock) dock.style.display = this.oneHandActive ? 'flex' : 'none';
-    if (window.luminaApp && window.luminaApp.showToast) {
-      window.luminaApp.showToast(this.oneHandActive ? 'Navegación a una mano activada' : 'Navegación a una mano desactivada');
+    if (window.ebookApp && window.ebookApp.showToast) {
+      window.ebookApp.showToast(this.oneHandActive ? 'Navegación a una mano activada' : 'Navegación a una mano desactivada');
     }
   }
 
@@ -241,19 +241,19 @@ class QuickShare {
         select.dispatchEvent(new Event('change'));
       }
 
-      if (window.luminaApp && window.luminaApp.showToast) {
-        window.luminaApp.showToast(`Tipografía cargada: ${file.name}`);
+      if (window.ebookApp && window.ebookApp.showToast) {
+        window.ebookApp.showToast(`Tipografía cargada: ${file.name}`);
       }
     } catch (e) {
       console.error('Error al cargar tipografía local:', e);
-      if (window.luminaApp) window.luminaApp.showToast('Error al procesar archivo de fuente (.ttf/.woff2)');
+      if (window.ebookApp) window.ebookApp.showToast('Error al procesar archivo de fuente (.ttf/.woff2)');
     }
   }
 
   // --- 6. Ink-saving print mode ---
   triggerInkSavingPrint() {
-    if (window.luminaApp && window.luminaApp.showToast) {
-      window.luminaApp.showToast('Preparando vista optimizada para ahorro de tinta...');
+    if (window.ebookApp && window.ebookApp.showToast) {
+      window.ebookApp.showToast('Preparando vista optimizada para ahorro de tinta...');
     }
     document.body.classList.add('ink-saving-print-active');
     setTimeout(() => {

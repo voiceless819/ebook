@@ -1,5 +1,5 @@
 /**
- * LuminaBook - Freehand Drawing Engine & Stylus / Apple Pencil Support
+ * Ebook4u - Freehand Drawing Engine & Stylus / Apple Pencil Support
  * Supports Apple Pencil / S-Pen / Mouse, Palm Rejection, Eraser,
  * multiple stroke widths, colors, and persistent storage in IndexedDB.
  */
@@ -139,8 +139,8 @@ class DrawingController {
     }
 
     if (this.active) {
-      if (window.luminaApp && window.luminaApp.showToast) {
-        window.luminaApp.showToast('Modo dibujo activo (Stylus / Ratón con rechazo de palma)');
+      if (window.ebookApp && window.ebookApp.showToast) {
+        window.ebookApp.showToast('Modo dibujo activo (Stylus / Ratón con rechazo de palma)');
       }
     }
   }
@@ -149,7 +149,7 @@ class DrawingController {
     if (!slotEl) return;
     this.currentPage = pageNum;
     this.container = slotEl;
-    if (window.luminaApp) this.currentBookId = window.luminaApp.currentBookId;
+    if (window.ebookApp) this.currentBookId = window.ebookApp.currentBookId;
 
     // Check if canvas already exists in slot
     let canvas = slotEl.querySelector('.freehand-drawing-canvas');
