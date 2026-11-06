@@ -41,23 +41,37 @@ class EbookApp {
     await this.refreshCatalogCount();
     this._updateReadingAnalyticsSummary();
 
+    // Deep-link from QR code or URL (?page=X)
+    let deepLinkPage = null;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const p = parseInt(urlParams.get('page'), 10);
+      if (!isNaN(p) && p >= 1) {
+        deepLinkPage = p;
+      }
+    } catch (e) {}
+
     // Check if user has previously saved books in their personal catalog
     const savedBooks = await window.bookStorage.getAllBooks(false);
     if (savedBooks.length > 0) {
       const lastBook = await window.bookStorage.getBook(savedBooks[0].id);
       if (lastBook && lastBook.fileData) {
         try {
-          await this._loadPDFFromBuffer(lastBook.fileData, lastBook.fileName, lastBook.id, lastBook.lastPage || 1);
-          this.showToast(`Documento restaurado: ${lastBook.title}`);
+          const targetPage = deepLinkPage || lastBook.lastPage || 1;
+          await this._loadPDFFromBuffer(lastBook.fileData, lastBook.fileName, lastBook.id, targetPage);
+          this.showToast(`Documento sincronizado en pág. ${targetPage}`);
         } catch (restoreErr) {
           console.warn('No se pudo restaurar el último libro, cargando manual:', restoreErr);
           await this.loadBook(window.DEMO_BOOK);
+          if (deepLinkPage) this.goToPage(deepLinkPage);
         }
       } else {
         await this.loadBook(window.DEMO_BOOK);
+        if (deepLinkPage) this.goToPage(deepLinkPage);
       }
     } else {
       await this.loadBook(window.DEMO_BOOK);
+      if (deepLinkPage) this.goToPage(deepLinkPage);
     }
 
     // Restore spread mode preference
@@ -70,7 +84,7 @@ class EbookApp {
 
     // Register PWA Service Worker if served via HTTP/HTTPS & force update check
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('./sw.js?v=8.0').then(reg => {
+      navigator.serviceWorker.register('./sw.js?v=12.0').then(reg => {
         reg.update();
       }).catch(() => {});
     }

@@ -1,9 +1,9 @@
 /**
  * Ebook4u - Service Worker for Offline Reading & GitHub Pages PWA
- * Version 11.0 - Network-First for App Assets to avoid stale caches
+ * Version 12.0 - Network-First for App Assets to avoid stale caches
  */
 
-const CACHE_NAME = 'ebook4u-cache-v11';
+const CACHE_NAME = 'ebook4u-cache-v12';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -14,6 +14,7 @@ const ASSETS_TO_CACHE = [
   './css/styles.css',
   './vendor/jszip.min.js',
   './vendor/pdf.min.js',
+  './vendor/qrcode.min.js',
   './vendor/pdf.worker.min.js',
   './js/storage.js',
   './js/audio.js',

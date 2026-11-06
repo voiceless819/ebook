@@ -43,104 +43,74 @@ class QuickShare {
               Escanea este código con la cámara de tu móvil o tablet para abrir la aplicación y sincronizar la lectura al instante:
             </p>
             <div class="qr-canvas-holder">
-              <canvas id="qrCodeCanvas" width="240" height="240"></canvas>
+              <div id="qrCodeContainer" class="qr-code-box"></div>
             </div>
-            <div class="qr-url-pill" id="qrUrlLabel"></div>
+            <div class="qr-url-pill" id="qrUrlLabel" title="Haz clic para copiar el enlace"></div>
+            <div class="qr-hint-copy">Toca el enlace para copiarlo al portapapeles</div>
           </div>
         </div>
       `;
       document.body.appendChild(modal);
 
       modal.querySelector('#btnCloseQRShare').addEventListener('click', () => modal.classList.remove('open'));
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.remove('open');
+      });
+
+      const urlLabel = modal.querySelector('#qrUrlLabel');
+      urlLabel.addEventListener('click', () => {
+        const text = urlLabel.innerText;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => {
+            if (window.ebookApp) window.ebookApp.showToast('Enlace copiado al portapapeles');
+          }).catch(() => {});
+        }
+      });
     }
 
     const curPage = window.ebookApp ? window.ebookApp.currentPage : 1;
-    let targetUrl = url || window.location.href.split('#')[0].split('?')[0];
-    targetUrl += `?page=${curPage}`;
+    let targetUrl = url;
+    if (!targetUrl) {
+      if (window.location.protocol === 'file:') {
+        targetUrl = 'https://voiceless819.github.io/ebook/';
+      } else {
+        targetUrl = window.location.href.split('#')[0].split('?')[0];
+      }
+    }
+    targetUrl += (targetUrl.includes('?') ? '&' : '?') + `page=${curPage}`;
 
     modal.querySelector('#qrUrlLabel').innerText = targetUrl;
     modal.classList.add('open');
 
-    this._renderQRCode(targetUrl, document.getElementById('qrCodeCanvas'));
+    this._renderQRCode(targetUrl, document.getElementById('qrCodeContainer'));
   }
 
   /**
-   * Minimalist, robust pure-JS QR code renderer
+   * Generates a real, 100% scannable ISO/IEC 18004 QR Code
    */
-  _renderQRCode(text, canvas) {
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  _renderQRCode(text, container) {
+    if (!container) return;
+    container.innerHTML = '';
 
-    // Use a lightweight, clean QR matrix generation
-    const qrMatrix = this._generateQRMatrix(text);
-    const size = qrMatrix.length;
-    const cellSize = Math.floor(canvas.width / size);
-    const offset = Math.floor((canvas.width - (size * cellSize)) / 2);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = '#111317';
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        if (qrMatrix[r][c]) {
-          ctx.fillRect(offset + c * cellSize, offset + r * cellSize, cellSize, cellSize);
-        }
-      }
-    }
-  }
-
-  _generateQRMatrix(str) {
-    // Generate standard 25x25 QR pattern with corner position markers and deterministic data hash
-    const size = 25;
-    const matrix = Array.from({ length: size }, () => Array(size).fill(0));
-
-    // Finder patterns (top-left, top-right, bottom-left)
-    const drawFinder = (top, left) => {
-      for (let r = 0; r < 7; r++) {
-        for (let c = 0; c < 7; c++) {
-          if (
-            (r === 0 || r === 6 || c === 0 || c === 6) ||
-            (r >= 2 && r <= 4 && c >= 2 && c <= 4)
-          ) {
-            matrix[top + r][left + c] = 1;
-          }
-        }
-      }
-    };
-
-    drawFinder(0, 0);
-    drawFinder(0, size - 7);
-    drawFinder(size - 7, 0);
-
-    // Timing lines
-    for (let i = 8; i < size - 8; i++) {
-      matrix[6][i] = i % 2 === 0 ? 1 : 0;
-      matrix[i][6] = i % 2 === 0 ? 1 : 0;
-    }
-
-    // Hash data bits into remaining cells
-    let bitIndex = 0;
-    const bytes = [];
-    for (let i = 0; i < str.length; i++) {
-      bytes.push(str.charCodeAt(i));
-    }
-
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        // Skip finder zones
-        if ((r < 8 && c < 8) || (r < 8 && c >= size - 8) || (r >= size - 8 && c < 8)) continue;
-        if (r === 6 || c === 6) continue;
-
-        const byteVal = bytes[bitIndex % bytes.length] || 42;
-        const bit = (byteVal ^ (r * 7 + c * 13)) % 2 === 0 ? 1 : 0;
-        matrix[r][c] = bit;
-        bitIndex++;
+    if (typeof QRCode !== 'undefined') {
+      try {
+        new QRCode(container, {
+          text: text,
+          width: 220,
+          height: 220,
+          colorDark: '#000000',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        return;
+      } catch (e) {
+        console.warn('QRCode library error, using fallback:', e);
       }
     }
 
-    return matrix;
+    // High quality standard QR image fallback
+    const encoded = encodeURIComponent(text);
+    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encoded}&margin=4" alt="Código QR" width="220" height="220" style="display:block; border-radius:4px;" />`;
   }
 
   // --- 2. Haptic Feedback ---
