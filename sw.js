@@ -1,13 +1,16 @@
 /**
  * Ebook4u - Service Worker for Offline Reading & GitHub Pages PWA
- * Version 8.0 - Network-First for App Assets to avoid stale caches
+ * Version 11.0 - Network-First for App Assets to avoid stale caches
  */
 
-const CACHE_NAME = 'ebook4u-cache-v8';
+const CACHE_NAME = 'ebook4u-cache-v11';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
+  './favicon.ico',
+  './assets/logo.png',
+  './assets/favicon.png',
   './css/styles.css',
   './vendor/jszip.min.js',
   './vendor/pdf.min.js',

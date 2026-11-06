@@ -113,6 +113,7 @@ class EbookApp {
       btnOpenFile: document.getElementById('btnOpenFile'),
       filePicker: document.getElementById('filePicker'),
       btnFullscreen: document.getElementById('btnFullscreen'),
+      btnLogoHome: document.getElementById('btnLogoHome'),
       btnOpenCatalog: document.getElementById('btnOpenCatalog'),
       catalogCountPill: document.getElementById('catalogCountPill'),
 
@@ -394,6 +395,9 @@ class EbookApp {
     });
 
     this.dom.btnFullscreen.addEventListener('click', () => this.toggleFullscreen());
+    if (this.dom.btnLogoHome) {
+      this.dom.btnLogoHome.addEventListener('click', () => this.goToPage(1));
+    }
 
     // 8. Drawers
     this.dom.btnOpenCatalog.addEventListener('click', () => {
